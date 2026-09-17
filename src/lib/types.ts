@@ -45,6 +45,7 @@ export type PlayerPublic = {
   id: string;
   name: string;
   color: string;
+  characterId: string | null;
   money: number;
   position: number;
   inJail: boolean;

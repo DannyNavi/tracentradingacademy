@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Board } from '../components/Board';
 import { Carats } from '../components/Carats';
+import { getCharacter } from '../lib/characters';
 import {
   buyProperty,
   endTurn,
@@ -50,28 +51,32 @@ export function GameScreen({ room, selfId }: Props) {
         </h2>
 
         <ul className="scoreboard">
-          {room.players.map((p) => (
-            <li
-              key={p.id}
-              className={`${p.id === current?.id ? 'active' : ''} ${p.bankrupt ? 'out' : ''}`}
-            >
-              <span className="dot" style={{ background: p.color }} />
-              <div>
-                <strong>
-                  {p.name}
-                  {p.id === selfId ? ' (you)' : ''}
-                </strong>
-                <div className="muted">
-                  {p.bankrupt ? (
-                    'Out'
-                  ) : (
-                    <Carats amount={p.money} />
-                  )}
-                  {p.inJail ? ' · Rest Box' : ''}
+          {room.players.map((p) => {
+            const chara = getCharacter(p.characterId);
+            return (
+              <li
+                key={p.id}
+                className={`${p.id === current?.id ? 'active' : ''} ${p.bankrupt ? 'out' : ''}`}
+              >
+                {chara ? (
+                  <img className="player-chara" src={chara.image} alt={chara.name} />
+                ) : (
+                  <span className="dot" style={{ background: p.color }} />
+                )}
+                <div>
+                  <strong>
+                    {p.name}
+                    {p.id === selfId ? ' (you)' : ''}
+                  </strong>
+                  <div className="muted">
+                    {chara ? `${chara.name} · ` : ''}
+                    {p.bankrupt ? 'Out' : <Carats amount={p.money} />}
+                    {p.inJail ? ' · Rest Box' : ''}
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
 
         <div className="actions">
