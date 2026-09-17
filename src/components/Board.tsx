@@ -50,7 +50,9 @@ function BoardCell({
           draggable={false}
         />
       ) : null}
-      <div className="cell-name">{space.name}</div>
+      {space.kind !== 'gotojail' ? (
+        <div className="cell-name">{space.name}</div>
+      ) : null}
       {space.price ? (
         <div className="cell-price">
           <Carats amount={space.price} />
