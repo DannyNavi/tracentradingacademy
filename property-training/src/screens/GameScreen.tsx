@@ -125,7 +125,7 @@ export function GameScreen({ room, selfId }: Props) {
           {isMyTurn && room.pending.type === 'card' && (
             <div className="action-stack card-reveal">
               <p className="eyebrow">
-                {room.pending.deck === 'chance' ? 'Race Day Draw' : 'Stable Memo'}
+                {room.pending.deck === 'chance' ? "Fuji's Hat" : 'Stable Memo'}
               </p>
               <p>{room.pending.card.text}</p>
               <button className="btn primary" onClick={() => void run(resolveCard)}>
