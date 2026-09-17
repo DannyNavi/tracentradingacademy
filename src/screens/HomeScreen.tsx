@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { createLobby, joinLobby, socket } from '../lib/socket';
+import { getPlayerId } from '../lib/session';
+import { createLobby, joinLobby } from '../lib/socket';
 import type { RoomState } from '../lib/types';
 
 type Props = {
@@ -22,7 +23,7 @@ export function HomeScreen({ onJoined }: Props) {
     try {
       const res = await createLobby(name.trim() || 'Host');
       if (!res.ok || !res.room) throw new Error(res.error || 'Failed');
-      onJoined(res.room, socket.id!);
+      onJoined(res.room, res.playerId || getPlayerId());
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -36,7 +37,7 @@ export function HomeScreen({ onJoined }: Props) {
     try {
       const res = await joinLobby(code.trim(), name.trim() || 'Trainer');
       if (!res.ok || !res.room) throw new Error(res.error || 'Failed');
-      onJoined(res.room, socket.id!);
+      onJoined(res.room, res.playerId || getPlayerId());
     } catch (e) {
       setError((e as Error).message);
     } finally {

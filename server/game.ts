@@ -12,6 +12,8 @@ const PLAYER_COLORS = ['#E4572E', '#2E86AB', '#F2C14E', '#1B998B', '#A23B72', '#
 const STARTING_MONEY = 1500;
 const GO_BONUS = 200;
 const JAIL_FINE = 50;
+/** Keep lobbies alive briefly so a refresh can rejoin. */
+const DISCONNECT_GRACE_MS = 120_000;
 
 function code(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -132,7 +134,6 @@ function applyCardEffect(room: RoomState, player: PlayerPublic, card: GameCard) 
     case 'move':
       pushLog(room, `${player.name}: ${card.text}`);
       movePlayer(room, player, effect.position, true);
-      // Re-land logic
       room.pending = { type: 'none' };
       resolveLanding(room, player, room.lastDice ? room.lastDice[0] + room.lastDice[1] : 0);
       break;
@@ -226,16 +227,23 @@ function resolveLanding(room: RoomState, player: PlayerPublic, diceTotal: number
   }
 }
 
+type SocketBinding = { roomCode: string; playerId: string };
+
 export class RoomManager {
   rooms = new Map<string, RoomState>();
-  socketToRoom = new Map<string, string>();
+  /** Live socket → room + persistent player id */
+  socketBindings = new Map<string, SocketBinding>();
+  private roomCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private hostTransferTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  createRoom(hostSocketId: string, hostName: string): RoomState {
+  createRoom(playerId: string, socketId: string, hostName: string): RoomState {
+    this.leaveCurrentRoom(socketId);
+
     let roomCode = code();
     while (this.rooms.has(roomCode)) roomCode = code();
 
     const host: PlayerPublic = {
-      id: hostSocketId,
+      id: playerId,
       name: hostName.slice(0, 16) || 'Host',
       color: PLAYER_COLORS[0],
       characterId: null,
@@ -250,7 +258,7 @@ export class RoomManager {
 
     const room: RoomState = {
       code: roomCode,
-      hostId: hostSocketId,
+      hostId: playerId,
       phase: 'config',
       content: defaultContent(),
       players: [host],
@@ -265,21 +273,28 @@ export class RoomManager {
     };
 
     this.rooms.set(roomCode, room);
-    this.socketToRoom.set(hostSocketId, roomCode);
+    this.bindSocket(socketId, roomCode, playerId);
     return room;
   }
 
-  joinRoom(codeIn: string, socketId: string, name: string): RoomState {
+  joinRoom(codeIn: string, playerId: string, socketId: string, name: string): RoomState {
     const room = this.rooms.get(codeIn.toUpperCase());
     if (!room) throw new Error('Lobby not found');
+
+    const existing = room.players.find((p) => p.id === playerId);
+    if (existing) {
+      return this.rejoinRoom(room.code, playerId, socketId);
+    }
+
     if (room.phase === 'playing' || room.phase === 'finished') {
       throw new Error('Game already started');
     }
     if (room.players.length >= 6) throw new Error('Lobby is full');
-    if (room.players.some((p) => p.id === socketId)) return room;
+
+    this.leaveCurrentRoom(socketId);
 
     const player: PlayerPublic = {
-      id: socketId,
+      id: playerId,
       name: name.slice(0, 16) || `Trainer ${room.players.length + 1}`,
       color: PLAYER_COLORS[room.players.length % PLAYER_COLORS.length],
       characterId: null,
@@ -292,14 +307,44 @@ export class RoomManager {
       connected: true,
     };
     room.players.push(player);
-    this.socketToRoom.set(socketId, room.code);
+    this.bindSocket(socketId, room.code, playerId);
+    this.clearRoomCleanup(room.code);
     pushLog(room, `${player.name} joined.`);
     return room;
   }
 
+  rejoinRoom(codeIn: string, playerId: string, socketId: string): RoomState {
+    const room = this.rooms.get(codeIn.toUpperCase());
+    if (!room) throw new Error('Lobby not found');
+    const player = room.players.find((p) => p.id === playerId);
+    if (!player) throw new Error('Session expired — join again');
+
+    this.leaveCurrentRoom(socketId);
+    // Drop any stale socket still bound to this player
+    for (const [sid, binding] of this.socketBindings) {
+      if (binding.playerId === playerId && sid !== socketId) {
+        this.socketBindings.delete(sid);
+      }
+    }
+
+    const wasDisconnected = !player.connected;
+    player.connected = true;
+    this.bindSocket(socketId, room.code, playerId);
+    this.clearRoomCleanup(room.code);
+    this.clearHostTransfer(room.code);
+    if (wasDisconnected) {
+      pushLog(room, `${player.name} reconnected.`);
+    }
+    return room;
+  }
+
   getRoomForSocket(socketId: string): RoomState | undefined {
-    const c = this.socketToRoom.get(socketId);
-    return c ? this.rooms.get(c) : undefined;
+    const binding = this.socketBindings.get(socketId);
+    return binding ? this.rooms.get(binding.roomCode) : undefined;
+  }
+
+  getPlayerIdForSocket(socketId: string): string | undefined {
+    return this.socketBindings.get(socketId)?.playerId;
   }
 
   updateContent(socketId: string, content: GameContent): RoomState {
@@ -327,16 +372,15 @@ export class RoomManager {
   }
 
   selectCharacter(socketId: string, characterId: string): RoomState {
-    const room = this.getRoomForSocket(socketId);
-    if (!room) throw new Error('Not in a lobby');
+    const { room, playerId } = this.requirePlayer(socketId);
     if (room.phase !== 'lobby' && room.phase !== 'config') {
       throw new Error('Character select is only available before the race');
     }
-    const player = room.players.find((p) => p.id === socketId);
+    const player = room.players.find((p) => p.id === playerId);
     if (!player) throw new Error('Player not found');
     const id = characterId.trim();
     if (!id) throw new Error('Pick a character');
-    const taken = room.players.find((p) => p.id !== socketId && p.characterId === id);
+    const taken = room.players.find((p) => p.id !== playerId && p.characterId === id);
     if (taken) throw new Error(`${taken.name} already chose that character`);
     player.characterId = id;
     pushLog(room, `${player.name} selected a trainee.`);
@@ -399,7 +443,6 @@ export class RoomManager {
     moveRelative(room, player, total);
     resolveLanding(room, player, total);
 
-    // If nothing pending and doubles, allow another roll after end-ish — handled in endTurn
     if (room.pending.type === 'none' && doubles && !player.inJail && room.phase === 'playing') {
       room.canRoll = true;
     } else if (room.pending.type === 'none') {
@@ -478,7 +521,6 @@ export class RoomManager {
     const player = currentPlayer(room);
     if (!player.inJail) throw new Error('Not in Infirmary');
 
-    // Allow initiating jail choice via roll when in jail
     if (room.pending.type === 'none' && room.canRoll) {
       room.pending = { type: 'jail_choice' };
       room.canRoll = false;
@@ -507,7 +549,6 @@ export class RoomManager {
       return room;
     }
 
-    // roll for doubles
     const d1 = 1 + Math.floor(Math.random() * 6);
     const d2 = 1 + Math.floor(Math.random() * 6);
     room.lastDice = [d1, d2];
@@ -552,27 +593,93 @@ export class RoomManager {
   }
 
   disconnect(socketId: string): RoomState | undefined {
-    const room = this.getRoomForSocket(socketId);
+    const binding = this.socketBindings.get(socketId);
+    if (!binding) return undefined;
+    const room = this.rooms.get(binding.roomCode);
+    this.socketBindings.delete(socketId);
     if (!room) return undefined;
-    const player = room.players.find((p) => p.id === socketId);
+
+    const player = room.players.find((p) => p.id === binding.playerId);
     if (player) {
       player.connected = false;
       pushLog(room, `${player.name} disconnected.`);
     }
-    this.socketToRoom.delete(socketId);
 
-    // If host leaves in lobby, transfer host
-    if (room.hostId === socketId) {
-      const next = room.players.find((p) => p.connected && p.id !== socketId);
-      if (next) room.hostId = next.id;
-    }
-
-    // Cleanup empty rooms
     if (room.players.every((p) => !p.connected)) {
-      this.rooms.delete(room.code);
-      return undefined;
+      this.scheduleRoomCleanup(room.code);
+    } else if (room.hostId === binding.playerId) {
+      this.scheduleHostTransfer(room.code, binding.playerId);
     }
+
     return room;
+  }
+
+  private bindSocket(socketId: string, roomCode: string, playerId: string) {
+    this.socketBindings.set(socketId, { roomCode, playerId });
+  }
+
+  private leaveCurrentRoom(socketId: string) {
+    const binding = this.socketBindings.get(socketId);
+    if (!binding) return;
+    // Soft leave without full disconnect cleanup when switching lobbies
+    const room = this.rooms.get(binding.roomCode);
+    this.socketBindings.delete(socketId);
+    if (!room) return;
+    const player = room.players.find((p) => p.id === binding.playerId);
+    if (player) player.connected = false;
+    if (room.players.every((p) => !p.connected)) {
+      this.scheduleRoomCleanup(room.code);
+    }
+  }
+
+  private clearRoomCleanup(roomCode: string) {
+    const t = this.roomCleanupTimers.get(roomCode);
+    if (t) {
+      clearTimeout(t);
+      this.roomCleanupTimers.delete(roomCode);
+    }
+  }
+
+  private scheduleRoomCleanup(roomCode: string) {
+    this.clearRoomCleanup(roomCode);
+    const timer = setTimeout(() => {
+      this.roomCleanupTimers.delete(roomCode);
+      const room = this.rooms.get(roomCode);
+      if (room && room.players.every((p) => !p.connected)) {
+        for (const [sid, binding] of this.socketBindings) {
+          if (binding.roomCode === roomCode) this.socketBindings.delete(sid);
+        }
+        this.clearHostTransfer(roomCode);
+        this.rooms.delete(roomCode);
+      }
+    }, DISCONNECT_GRACE_MS);
+    this.roomCleanupTimers.set(roomCode, timer);
+  }
+
+  private clearHostTransfer(roomCode: string) {
+    const t = this.hostTransferTimers.get(roomCode);
+    if (t) {
+      clearTimeout(t);
+      this.hostTransferTimers.delete(roomCode);
+    }
+  }
+
+  private scheduleHostTransfer(roomCode: string, expectedHostId: string) {
+    this.clearHostTransfer(roomCode);
+    const timer = setTimeout(() => {
+      this.hostTransferTimers.delete(roomCode);
+      const room = this.rooms.get(roomCode);
+      if (!room) return;
+      if (room.hostId !== expectedHostId) return;
+      const host = room.players.find((p) => p.id === expectedHostId);
+      if (host?.connected) return;
+      const next = room.players.find((p) => p.connected && p.id !== expectedHostId);
+      if (next) {
+        room.hostId = next.id;
+        pushLog(room, `${next.name} is now the host.`);
+      }
+    }, DISCONNECT_GRACE_MS);
+    this.hostTransferTimers.set(roomCode, timer);
   }
 
   private afterAction(room: RoomState) {
@@ -594,24 +701,27 @@ export class RoomManager {
     room.pending = { type: 'none' };
     const next = currentPlayer(room);
     room.canRoll = true;
-    if (next.inJail) {
-      // they'll choose on roll
-    }
     pushLog(room, `${next.name}'s turn.`);
   }
 
-  private requireHost(socketId: string): RoomState {
-    const room = this.getRoomForSocket(socketId);
+  private requirePlayer(socketId: string): { room: RoomState; playerId: string } {
+    const binding = this.socketBindings.get(socketId);
+    if (!binding) throw new Error('Not in a lobby');
+    const room = this.rooms.get(binding.roomCode);
     if (!room) throw new Error('Not in a lobby');
-    if (room.hostId !== socketId) throw new Error('Only the host can do that');
+    return { room, playerId: binding.playerId };
+  }
+
+  private requireHost(socketId: string): RoomState {
+    const { room, playerId } = this.requirePlayer(socketId);
+    if (room.hostId !== playerId) throw new Error('Only the host can do that');
     return room;
   }
 
   private requireTurn(socketId: string): RoomState {
-    const room = this.getRoomForSocket(socketId);
-    if (!room) throw new Error('Not in a lobby');
+    const { room, playerId } = this.requirePlayer(socketId);
     if (room.phase !== 'playing') throw new Error('Game not in progress');
-    if (currentPlayer(room).id !== socketId) throw new Error('Not your turn');
+    if (currentPlayer(room).id !== playerId) throw new Error('Not your turn');
     if (currentPlayer(room).bankrupt) throw new Error('You are out');
     return room;
   }

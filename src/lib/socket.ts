@@ -1,7 +1,8 @@
 import { io, Socket } from 'socket.io-client';
+import { getPlayerId } from './session';
 import type { GameContent, RoomState } from './types';
 
-type Ack = { ok: boolean; room?: RoomState; error?: string };
+type Ack = { ok: boolean; room?: RoomState; playerId?: string; error?: string };
 
 /** In Vite dev, talk to the API server directly (avoids proxy ack issues). */
 const URL =
@@ -33,11 +34,15 @@ function emit(event: string, payload?: unknown): Promise<Ack> {
 }
 
 export async function createLobby(name: string) {
-  return emit('lobby:create', { name });
+  return emit('lobby:create', { name, playerId: getPlayerId() });
 }
 
 export async function joinLobby(code: string, name: string) {
-  return emit('lobby:join', { code, name });
+  return emit('lobby:join', { code, name, playerId: getPlayerId() });
+}
+
+export async function rejoinLobby(code: string, playerId: string) {
+  return emit('lobby:rejoin', { code, playerId });
 }
 
 export async function updateContent(content: GameContent) {

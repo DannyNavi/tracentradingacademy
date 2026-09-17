@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ConfigScreen } from './screens/ConfigScreen';
 import { GameScreen } from './screens/GameScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
-import { socket } from './lib/socket';
+import { clearSession, getPlayerId, loadSession, saveSession } from './lib/session';
+import { rejoinLobby, socket } from './lib/socket';
 import type { RoomState } from './lib/types';
 import './App.css';
 
@@ -11,16 +12,45 @@ type View = 'home' | 'config' | 'lobby' | 'game';
 
 export default function App() {
   const [room, setRoom] = useState<RoomState | null>(null);
-  const [selfId, setSelfId] = useState('');
+  const [selfId, setSelfId] = useState(() => getPlayerId());
   const [forceConfig, setForceConfig] = useState(false);
   const [connected, setConnected] = useState(socket.connected);
+  const [rejoining, setRejoining] = useState(() => Boolean(loadSession()));
+  const rejoinedRef = useRef(false);
 
   useEffect(() => {
+    async function tryRejoin() {
+      const session = loadSession();
+      if (!session) {
+        setRejoining(false);
+        return;
+      }
+      if (rejoinedRef.current) return;
+      rejoinedRef.current = true;
+      setRejoining(true);
+      try {
+        const res = await rejoinLobby(session.roomCode, session.playerId);
+        if (!res.ok || !res.room) throw new Error(res.error || 'Rejoin failed');
+        setSelfId(session.playerId);
+        setRoom(res.room);
+        setForceConfig(res.room.phase === 'config');
+        saveSession(res.room.code, session.playerId);
+      } catch {
+        clearSession();
+        setRoom(null);
+      } finally {
+        setRejoining(false);
+      }
+    }
+
     const onConnect = () => {
       setConnected(true);
-      if (socket.id) setSelfId(socket.id);
+      void tryRejoin();
     };
-    const onDisconnect = () => setConnected(false);
+    const onDisconnect = () => {
+      setConnected(false);
+      rejoinedRef.current = false;
+    };
     const onState = (next: RoomState) => {
       setRoom(next);
       if (next.phase === 'lobby') setForceConfig(false);
@@ -30,7 +60,7 @@ export default function App() {
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('room:state', onState);
-    if (socket.connected && socket.id) setSelfId(socket.id);
+    if (socket.connected) void tryRejoin();
 
     return () => {
       socket.off('connect', onConnect);
@@ -49,12 +79,14 @@ export default function App() {
   return (
     <div className="app-shell">
       {!connected ? <div className="banner">Connecting to server…</div> : null}
-      {view === 'home' && (
+      {connected && rejoining ? <div className="banner">Rejoining lobby…</div> : null}
+      {view === 'home' && !rejoining && (
         <HomeScreen
           onJoined={(r, id) => {
             setRoom(r);
             setSelfId(id);
             setForceConfig(r.phase === 'config');
+            saveSession(r.code, id);
           }}
         />
       )}

@@ -25,25 +25,58 @@ function emitRoom(code: string) {
   io.to(code).emit('room:state', room);
 }
 
+function requirePlayerId(playerId: unknown): string {
+  if (typeof playerId !== 'string' || !playerId.trim()) {
+    throw new Error('Missing player id');
+  }
+  return playerId.trim().slice(0, 64);
+}
+
 io.on('connection', (socket) => {
-  socket.on('lobby:create', ({ name }: { name: string }, ack?: (r: unknown) => void) => {
-    try {
-      const room = rooms.createRoom(socket.id, name || 'Host');
-      socket.join(room.code);
-      ack?.({ ok: true, room });
-      emitRoom(room.code);
-    } catch (e) {
-      ack?.({ ok: false, error: (e as Error).message });
-    }
-  });
+  socket.on(
+    'lobby:create',
+    ({ name, playerId }: { name: string; playerId: string }, ack?: (r: unknown) => void) => {
+      try {
+        const id = requirePlayerId(playerId);
+        const room = rooms.createRoom(id, socket.id, name || 'Host');
+        socket.join(room.code);
+        ack?.({ ok: true, room, playerId: id });
+        emitRoom(room.code);
+      } catch (e) {
+        ack?.({ ok: false, error: (e as Error).message });
+      }
+    },
+  );
 
   socket.on(
     'lobby:join',
-    ({ code, name }: { code: string; name: string }, ack?: (r: unknown) => void) => {
+    (
+      { code, name, playerId }: { code: string; name: string; playerId: string },
+      ack?: (r: unknown) => void,
+    ) => {
       try {
-        const room = rooms.joinRoom(code, socket.id, name || 'Trainer');
+        const id = requirePlayerId(playerId);
+        const room = rooms.joinRoom(code, id, socket.id, name || 'Trainer');
         socket.join(room.code);
-        ack?.({ ok: true, room });
+        ack?.({ ok: true, room, playerId: id });
+        emitRoom(room.code);
+      } catch (e) {
+        ack?.({ ok: false, error: (e as Error).message });
+      }
+    },
+  );
+
+  socket.on(
+    'lobby:rejoin',
+    (
+      { code, playerId }: { code: string; playerId: string },
+      ack?: (r: unknown) => void,
+    ) => {
+      try {
+        const id = requirePlayerId(playerId);
+        const room = rooms.rejoinRoom(code, id, socket.id);
+        socket.join(room.code);
+        ack?.({ ok: true, room, playerId: id });
         emitRoom(room.code);
       } catch (e) {
         ack?.({ ok: false, error: (e as Error).message });
