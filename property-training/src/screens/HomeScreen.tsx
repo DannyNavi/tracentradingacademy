@@ -48,11 +48,7 @@ export function HomeScreen({ onJoined }: Props) {
     <div className="home">
       <div className="home-atmosphere" aria-hidden />
       <header className="home-hero">
-        <p className="brand">
-          Tracen Trading
-          <br />
-          Training
-        </p>
+        <p className="brand">Tracen Trading Academy</p>
         <h1>Build the circuit. Call the lobby.</h1>
         <p className="lede">
           Host a room, rename every track and card, then race the board with friends

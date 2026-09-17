@@ -170,5 +170,5 @@ app.get(/.*/, (_req, res) => {
 
 const PORT = Number(process.env.PORT) || 3001;
 httpServer.listen(PORT, () => {
-  console.log(`Tracen Trading Training server on http://localhost:${PORT}`);
+  console.log(`Tracen Trading Academy server on http://localhost:${PORT}`);
 });

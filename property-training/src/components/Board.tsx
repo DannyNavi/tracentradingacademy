@@ -76,7 +76,7 @@ export function Board({ room }: Props) {
   return (
     <div className="board">
       <div className="board-center">
-        <p className="brand-sm">Tracen Trading Training</p>
+        <p className="brand-sm">Tracen Trading Academy</p>
         <p className="board-center-sub">Lobby {room.code}</p>
         <DiceRoll
           dice={room.lastDice}
