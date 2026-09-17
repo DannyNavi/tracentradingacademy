@@ -12,7 +12,7 @@ const EFFECT_OPTIONS: { value: CardEffect['type']; label: string }[] = [
   { value: 'money', label: 'Carats (+/−)' },
   { value: 'move', label: 'Move to space #' },
   { value: 'move_relative', label: 'Move relative steps' },
-  { value: 'jail', label: 'Send to Rest Box' },
+  { value: 'jail', label: 'Send to Infirmary' },
   { value: 'nearest_rail', label: 'Nearest transport' },
   { value: 'get_out_of_jail', label: 'Get out free' },
 ];
