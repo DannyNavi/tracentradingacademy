@@ -952,9 +952,34 @@ select:focus {
   background: linear-gradient(160deg, #e4f1ff, #ffffff);
 }
 
-.kind-jail,
-.kind-gotojail {
+.kind-jail {
   background: linear-gradient(160deg, #ffe4e0, #ffffff);
+}
+
+.kind-gotojail {
+  background: linear-gradient(160deg, #dcecff, #ffffff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.cell-slacker {
+  width: 88%;
+  max-width: 58px;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  margin: 1px auto 0;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+}
+
+.kind-gotojail .cell-name {
+  text-align: center;
+  -webkit-line-clamp: 2;
+  font-size: 0.48rem;
+  margin-top: auto;
 }
 
 .kind-rail,
