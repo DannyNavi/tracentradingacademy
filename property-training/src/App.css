@@ -637,9 +637,18 @@ select:focus {
   inset: var(--cell);
   display: grid;
   place-content: center;
+  justify-items: center;
   text-align: center;
-  gap: 0.25rem;
+  gap: 0.35rem;
   pointer-events: none;
+  z-index: 2;
+}
+
+.board-center .board-roll-btn {
+  pointer-events: auto;
+  margin-top: 0.35rem;
+  min-width: 8.5rem;
+  animation: rise 280ms ease;
 }
 
 .board-center-sub {

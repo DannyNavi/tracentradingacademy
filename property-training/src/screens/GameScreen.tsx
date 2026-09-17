@@ -38,6 +38,13 @@ export function GameScreen({ room, selfId }: Props) {
     ? room.players.find((p) => p.id === room.winnerId)
     : null;
 
+  const canRollOnBoard =
+    room.phase === 'playing' &&
+    isMyTurn &&
+    room.pending.type === 'none' &&
+    room.canRoll &&
+    !me?.inJail;
+
   return (
     <div className="game-page">
       <aside className="sidebar">
@@ -80,16 +87,6 @@ export function GameScreen({ room, selfId }: Props) {
         </ul>
 
         <div className="actions">
-          {room.phase === 'playing' &&
-            isMyTurn &&
-            room.pending.type === 'none' &&
-            room.canRoll &&
-            !me?.inJail && (
-              <button className="btn primary" onClick={() => void run(rollDice)}>
-                Roll dice
-              </button>
-            )}
-
           {room.phase === 'playing' &&
             isMyTurn &&
             room.pending.type === 'none' &&
@@ -190,7 +187,11 @@ export function GameScreen({ room, selfId }: Props) {
       </aside>
 
       <div className="board-wrap">
-        <Board room={room} />
+        <Board
+          room={room}
+          canRoll={canRollOnBoard}
+          onRoll={() => void run(rollDice)}
+        />
       </div>
     </div>
   );
