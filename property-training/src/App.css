@@ -68,13 +68,15 @@ button {
 }
 
 .brand {
-  font-size: clamp(3rem, 10vw, 5.5rem);
-  line-height: 0.9;
+  font-size: clamp(2.4rem, 8vw, 4.6rem);
+  line-height: 0.92;
   text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+  max-width: 12ch;
 }
 
 .brand-sm {
-  font-size: 1.6rem;
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  line-height: 1;
 }
 
 .eyebrow {
