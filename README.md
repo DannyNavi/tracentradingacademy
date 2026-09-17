@@ -1,4 +1,4 @@
-# Tracen Trading Training
+# Tracen Trading Academy
 
 A multiplayer property-trading board game with Kahoot-style lobby codes.
 Hosts can customize every property name and all Fuji's Hat / Stable Memo events.
