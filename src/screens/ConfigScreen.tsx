@@ -143,7 +143,7 @@ export function ConfigScreen({ room, selfId, onDone }: Props) {
         <div>
           <p className="eyebrow">Lobby {room.code}</p>
           <h2>Customize your circuit</h2>
-          <p className="muted">Rename properties and rewrite Race Day / Stable Memo events.</p>
+          <p className="muted">Rename properties and rewrite Fuji&apos;s Hat / Stable Memo events.</p>
         </div>
         <button className="btn primary" disabled={saving} onClick={() => void save(true)}>
           {saving ? 'Saving…' : 'Save & open lobby'}
@@ -155,7 +155,7 @@ export function ConfigScreen({ room, selfId, onDone }: Props) {
           Properties
         </button>
         <button className={tab === 'chance' ? 'active' : ''} onClick={() => setTab('chance')}>
-          Race Day Draw
+          Fuji&apos;s Hat
         </button>
         <button className={tab === 'community' ? 'active' : ''} onClick={() => setTab('community')}>
           Stable Memo
@@ -263,7 +263,7 @@ function CardEditor({
   return (
     <div className="card-editor">
       <div className="card-editor-head">
-        <h3>{deck === 'chance' ? 'Race Day Draw events' : 'Stable Memo events'}</h3>
+        <h3>{deck === 'chance' ? "Fuji's Hat events" : 'Stable Memo events'}</h3>
         <button type="button" className="btn ghost" onClick={onAdd}>
           Add event
         </button>

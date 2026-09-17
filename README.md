@@ -1,7 +1,7 @@
 # Property Training
 
 A multiplayer property-trading board game with Kahoot-style lobby codes.
-Hosts can customize every property name and all Race Day Draw / Stable Memo events.
+Hosts can customize every property name and all Fuji's Hat / Stable Memo events.
 
 ## Run locally
 
