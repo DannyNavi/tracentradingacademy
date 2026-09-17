@@ -124,6 +124,9 @@ export function GameScreen({ room, selfId }: Props) {
 
           {isMyTurn && room.pending.type === 'card' && (
             <div className="action-stack card-reveal">
+              {room.pending.deck === 'chance' ? (
+                <img className="fuji-card-art" src="/fuji-hat.png" alt="" />
+              ) : null}
               <p className="eyebrow">
                 {room.pending.deck === 'chance' ? "Fuji's Hat" : 'Stable Memo'}
               </p>

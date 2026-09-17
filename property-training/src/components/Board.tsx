@@ -30,6 +30,9 @@ function BoardCell({
       {(space.kind === 'property' || space.kind === 'rail' || space.kind === 'utility') && (
         <div className="cell-stripe" />
       )}
+      {space.kind === 'chance' ? (
+        <img className="cell-fuji" src="/fuji-hat.png" alt="" draggable={false} />
+      ) : null}
       <div className="cell-name">{space.name}</div>
       {space.price ? <div className="cell-price">¥{space.price}</div> : null}
       {owner ? <div className="cell-owner" style={{ background: owner.color }} /> : null}

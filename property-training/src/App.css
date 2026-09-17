@@ -623,7 +623,40 @@ select {
 }
 
 .kind-chance {
-  background: rgba(156, 102, 68, 0.35);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(233, 196, 106, 0.2), transparent 70%),
+    rgba(30, 42, 55, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.cell-fuji {
+  width: 70%;
+  max-width: 48px;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  margin: 2px auto 0;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+.kind-chance .cell-name {
+  text-align: center;
+  -webkit-line-clamp: 2;
+  font-size: 0.5rem;
+  margin-top: auto;
+}
+
+.fuji-card-art {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin: 0 auto;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
 }
 
 .kind-community {
