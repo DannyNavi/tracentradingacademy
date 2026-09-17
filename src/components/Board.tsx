@@ -43,22 +43,22 @@ function BoardCell({
 }
 
 /**
- * Clockwise from Starting Gate (bottom-left):
- * bottom → right (up) → top (left) → left (down) → back to gate.
- * CSS grids fill top→bottom / left→right, so vertical edges are ordered for that.
+ * Classic property-board orientation (GO bottom-right, clockwise):
+ * bottom ← left ↑ top → right ↓ back to GO.
+ * CSS grids fill left→right / top→bottom.
  */
 export function Board({ room }: Props) {
   const spaces = room.content.properties;
   const byId = (id: number) => spaces.find((s) => s.id === id)!;
 
-  // Bottom: Starting Gate, then browns / early spaces, Rest Box (L→R)
-  const bottom = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  // Right: walk up from Rest Box — grid is top→bottom so high ids first
-  const rightTopToBottom = [19, 18, 17, 16, 15, 14, 13, 12, 11];
-  // Top: walk left from Winner's Circle — grid is L→R so 30 … 20
-  const topLeftToRight = [30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20];
-  // Left: walk down toward Starting Gate — Grand Lawn near top, Crown Stakes above gate
-  const leftTopToBottom = [31, 32, 33, 34, 35, 36, 37, 38, 39];
+  // Bottom L→R: Rest Box … browns … Starting Gate (GO at bottom-right)
+  const bottomLeftToRight = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+  // Left T→B: just below Winner's Circle down to just above Rest Box
+  const leftTopToBottom = [19, 18, 17, 16, 15, 14, 13, 12, 11];
+  // Top L→R: Winner's Circle … Sent to Rest Box
+  const topLeftToRight = [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+  // Right T→B: Grand Lawn … Crown Stakes (immediately above Starting Gate)
+  const rightTopToBottom = [31, 32, 33, 34, 35, 36, 37, 38, 39];
 
   return (
     <div className="board">
@@ -75,7 +75,7 @@ export function Board({ room }: Props) {
       </div>
 
       <div className="edge bottom">
-        {bottom.map((id) => (
+        {bottomLeftToRight.map((id) => (
           <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} />
         ))}
       </div>
