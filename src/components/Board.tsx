@@ -5,6 +5,8 @@ import { DiceRoll } from './DiceRoll';
 
 type Props = {
   room: RoomState;
+  canRoll?: boolean;
+  onRoll?: () => void;
 };
 
 function tokensOn(spaceId: number, players: PlayerPublic[]) {
@@ -73,7 +75,7 @@ function BoardCell({
  * bottom ← left ↑ top → right ↓ back to GO.
  * CSS grids fill left→right / top→bottom.
  */
-export function Board({ room }: Props) {
+export function Board({ room, canRoll = false, onRoll }: Props) {
   const spaces = room.content.properties;
   const byId = (id: number) => spaces.find((s) => s.id === id)!;
 
@@ -95,6 +97,11 @@ export function Board({ room }: Props) {
           dice={room.lastDice}
           animKey={room.lastDice ? `${room.log[0] ?? ''}:${room.lastDice.join('-')}` : ''}
         />
+        {canRoll && onRoll ? (
+          <button type="button" className="btn primary board-roll-btn" onClick={onRoll}>
+            Roll dice
+          </button>
+        ) : null}
       </div>
 
       <div className="edge bottom">
