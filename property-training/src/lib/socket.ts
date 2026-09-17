@@ -48,6 +48,10 @@ export async function openLobby() {
   return emit('lobby:open');
 }
 
+export async function selectCharacter(characterId: string) {
+  return emit('lobby:selectCharacter', { characterId });
+}
+
 export async function startGame() {
   return emit('game:start');
 }

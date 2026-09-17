@@ -1,4 +1,5 @@
 import type { BoardSpace, PlayerPublic, RoomState } from '../lib/types';
+import { getCharacter } from '../lib/characters';
 import { Carats } from './Carats';
 import { DiceRoll } from './DiceRoll';
 
@@ -47,9 +48,21 @@ function BoardCell({
       ) : null}
       {owner ? <div className="cell-owner" style={{ background: owner.color }} /> : null}
       <div className="cell-tokens">
-        {here.map((p) => (
-          <span key={p.id} className="token" style={{ background: p.color }} title={p.name} />
-        ))}
+        {here.map((p) => {
+          const chara = getCharacter(p.characterId);
+          return chara ? (
+            <img
+              key={p.id}
+              className="token-chara"
+              src={chara.image}
+              alt={p.name}
+              title={`${p.name} · ${chara.name}`}
+              style={{ borderColor: p.color }}
+            />
+          ) : (
+            <span key={p.id} className="token" style={{ background: p.color }} title={p.name} />
+          );
+        })}
       </div>
     </div>
   );

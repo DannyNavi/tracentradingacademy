@@ -71,6 +71,19 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on(
+    'lobby:selectCharacter',
+    ({ characterId }: { characterId: string }, ack?: (r: unknown) => void) => {
+      try {
+        const room = rooms.selectCharacter(socket.id, characterId);
+        ack?.({ ok: true, room });
+        emitRoom(room.code);
+      } catch (e) {
+        ack?.({ ok: false, error: (e as Error).message });
+      }
+    },
+  );
+
   socket.on('game:start', (ack?: (r: unknown) => void) => {
     try {
       const room = rooms.startGame(socket.id);

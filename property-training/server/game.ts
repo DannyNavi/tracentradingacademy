@@ -238,6 +238,7 @@ export class RoomManager {
       id: hostSocketId,
       name: hostName.slice(0, 16) || 'Host',
       color: PLAYER_COLORS[0],
+      characterId: null,
       money: STARTING_MONEY,
       position: 0,
       inJail: false,
@@ -281,6 +282,7 @@ export class RoomManager {
       id: socketId,
       name: name.slice(0, 16) || `Trainer ${room.players.length + 1}`,
       color: PLAYER_COLORS[room.players.length % PLAYER_COLORS.length],
+      characterId: null,
       money: STARTING_MONEY,
       position: 0,
       inJail: false,
@@ -324,9 +326,29 @@ export class RoomManager {
     return room;
   }
 
+  selectCharacter(socketId: string, characterId: string): RoomState {
+    const room = this.getRoomForSocket(socketId);
+    if (!room) throw new Error('Not in a lobby');
+    if (room.phase !== 'lobby' && room.phase !== 'config') {
+      throw new Error('Character select is only available before the race');
+    }
+    const player = room.players.find((p) => p.id === socketId);
+    if (!player) throw new Error('Player not found');
+    const id = characterId.trim();
+    if (!id) throw new Error('Pick a character');
+    const taken = room.players.find((p) => p.id !== socketId && p.characterId === id);
+    if (taken) throw new Error(`${taken.name} already chose that character`);
+    player.characterId = id;
+    pushLog(room, `${player.name} selected a trainee.`);
+    return room;
+  }
+
   startGame(socketId: string): RoomState {
     const room = this.requireHost(socketId);
     if (room.players.length < 2) throw new Error('Need at least 2 players');
+    if (room.players.some((p) => !p.characterId)) {
+      throw new Error('Every trainer must pick a character first');
+    }
     room.phase = 'playing';
     room.turnIndex = 0;
     room.ownership = {};
