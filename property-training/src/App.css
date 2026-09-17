@@ -965,12 +965,12 @@ select:focus {
 }
 
 .cell-slacker {
-  width: 88%;
-  max-width: 58px;
+  width: 96%;
+  max-width: 72px;
   height: auto;
   aspect-ratio: 1;
   object-fit: contain;
-  margin: 1px auto 0;
+  margin: 0 auto;
   pointer-events: none;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
 }
@@ -978,8 +978,9 @@ select:focus {
 .kind-gotojail .cell-name {
   text-align: center;
   -webkit-line-clamp: 2;
-  font-size: 0.48rem;
-  margin-top: auto;
+  font-size: 0.45rem;
+  margin-top: 0;
+  line-height: 1.05;
 }
 
 .kind-rail,
