@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Board } from '../components/Board';
+import { Carats } from '../components/Carats';
 import {
   buyProperty,
   endTurn,
@@ -61,7 +62,11 @@ export function GameScreen({ room, selfId }: Props) {
                   {p.id === selfId ? ' (you)' : ''}
                 </strong>
                 <div className="muted">
-                  {p.bankrupt ? 'Out' : `¥${p.money}`}
+                  {p.bankrupt ? (
+                    'Out'
+                  ) : (
+                    <Carats amount={p.money} />
+                  )}
                   {p.inJail ? ' · Rest Box' : ''}
                 </div>
               </div>
@@ -93,7 +98,8 @@ export function GameScreen({ room, selfId }: Props) {
           {isMyTurn && room.pending.type === 'buy_or_pass' && (
             <div className="action-stack">
               <p>
-                Acquire space #{room.pending.spaceId} for ¥{room.pending.price}?
+                Acquire space #{room.pending.spaceId} for{' '}
+                <Carats amount={room.pending.price} />?
               </p>
               <button className="btn primary" onClick={() => void run(buyProperty)}>
                 Buy
@@ -106,7 +112,9 @@ export function GameScreen({ room, selfId }: Props) {
 
           {isMyTurn && room.pending.type === 'pay_rent' && (
             <div className="action-stack">
-              <p>Pay ¥{room.pending.amount} rent</p>
+              <p>
+                Pay <Carats amount={room.pending.amount} /> rent
+              </p>
               <button className="btn primary" onClick={() => void run(payDue)}>
                 Pay
               </button>
@@ -115,7 +123,9 @@ export function GameScreen({ room, selfId }: Props) {
 
           {isMyTurn && room.pending.type === 'pay_tax' && (
             <div className="action-stack">
-              <p>Pay ¥{room.pending.amount} fee</p>
+              <p>
+                Pay <Carats amount={room.pending.amount} /> fee
+              </p>
               <button className="btn primary" onClick={() => void run(payDue)}>
                 Pay
               </button>
@@ -149,7 +159,7 @@ export function GameScreen({ room, selfId }: Props) {
                   Roll for doubles
                 </button>
                 <button className="btn ghost" onClick={() => void run(() => jailAction('pay'))}>
-                  Pay ¥50
+                  Pay <Carats amount={50} />
                 </button>
                 <button
                   className="btn ghost"

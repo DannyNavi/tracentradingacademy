@@ -45,29 +45,29 @@ export const DEFAULT_SPACES: BoardSpace[] = [
 ];
 
 export const DEFAULT_CHANCE: GameCard[] = [
-  { id: 'ch1', text: 'Advance to Starting Gate. Collect ¥200.', effect: { type: 'move', position: 0 } },
+  { id: 'ch1', text: 'Advance to Starting Gate. Collect 200 carats.', effect: { type: 'move', position: 0 } },
   { id: 'ch2', text: 'Sprint to Crown Stakes.', effect: { type: 'move', position: 39 } },
   { id: 'ch3', text: 'Take a recovery day in the Rest Box.', effect: { type: 'jail' } },
-  { id: 'ch4', text: 'Sponsor bonus! Collect ¥150.', effect: { type: 'money', amount: 150 } },
-  { id: 'ch5', text: 'Equipment upgrade costs ¥50.', effect: { type: 'money', amount: -50 } },
+  { id: 'ch4', text: 'Sponsor bonus! Collect 150 carats.', effect: { type: 'money', amount: 150 } },
+  { id: 'ch5', text: 'Equipment upgrade costs 50 carats.', effect: { type: 'money', amount: -50 } },
   { id: 'ch6', text: 'Back up 3 spaces.', effect: { type: 'move_relative', steps: -3 } },
   { id: 'ch7', text: 'Advance to nearest Transport hub.', effect: { type: 'nearest_rail' } },
   { id: 'ch8', text: 'Get out of Rest Box free. Keep until needed.', effect: { type: 'get_out_of_jail' } },
-  { id: 'ch9', text: 'Fan meetup! Collect ¥100.', effect: { type: 'money', amount: 100 } },
-  { id: 'ch10', text: 'Fine for false start: pay ¥30.', effect: { type: 'money', amount: -30 } },
+  { id: 'ch9', text: 'Fan meetup! Collect 100 carats.', effect: { type: 'money', amount: 100 } },
+  { id: 'ch10', text: 'Fine for false start: pay 30 carats.', effect: { type: 'money', amount: -30 } },
 ];
 
 export const DEFAULT_COMMUNITY: GameCard[] = [
-  { id: 'cm1', text: 'Advance to Starting Gate. Collect ¥200.', effect: { type: 'move', position: 0 } },
-  { id: 'cm2', text: 'Stable fund dividend: collect ¥100.', effect: { type: 'money', amount: 100 } },
-  { id: 'cm3', text: 'Doctor visit: pay ¥50.', effect: { type: 'money', amount: -50 } },
-  { id: 'cm4', text: 'Inheritance from a legendary trainer: ¥200.', effect: { type: 'money', amount: 200 } },
-  { id: 'cm5', text: 'Pay training camp fees: ¥100.', effect: { type: 'money', amount: -100 } },
+  { id: 'cm1', text: 'Advance to Starting Gate. Collect 200 carats.', effect: { type: 'move', position: 0 } },
+  { id: 'cm2', text: 'Stable fund dividend: collect 100 carats.', effect: { type: 'money', amount: 100 } },
+  { id: 'cm3', text: 'Doctor visit: pay 50 carats.', effect: { type: 'money', amount: -50 } },
+  { id: 'cm4', text: 'Inheritance from a legendary trainer: 200 carats.', effect: { type: 'money', amount: 200 } },
+  { id: 'cm5', text: 'Pay training camp fees: 100 carats.', effect: { type: 'money', amount: -100 } },
   { id: 'cm6', text: 'Beauty sleep in the Rest Box.', effect: { type: 'jail' } },
   { id: 'cm7', text: 'Get out of Rest Box free.', effect: { type: 'get_out_of_jail' } },
-  { id: 'cm8', text: 'Sale of old tack: collect ¥45.', effect: { type: 'money', amount: 45 } },
-  { id: 'cm9', text: 'Income tax refund: collect ¥20.', effect: { type: 'money', amount: 20 } },
-  { id: 'cm10', text: 'Birthday cake from the team: collect ¥10 from each vibe — take ¥50.', effect: { type: 'money', amount: 50 } },
+  { id: 'cm8', text: 'Sale of old tack: collect 45 carats.', effect: { type: 'money', amount: 45 } },
+  { id: 'cm9', text: 'Income tax refund: collect 20 carats.', effect: { type: 'money', amount: 20 } },
+  { id: 'cm10', text: 'Birthday cake from the team: collect 10 carats from each vibe — take 50 carats.', effect: { type: 'money', amount: 50 } },
 ];
 
 export function defaultContent(): GameContent {

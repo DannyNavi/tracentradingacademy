@@ -89,7 +89,7 @@ function tryBankrupt(room: RoomState, player: PlayerPublic) {
 function collectGo(room: RoomState, player: PlayerPublic, from: number, to: number, forced = false) {
   if (forced || to < from) {
     player.money += GO_BONUS;
-    pushLog(room, `${player.name} passes Starting Gate (+¥${GO_BONUS}).`);
+    pushLog(room, `${player.name} passes Starting Gate (+${GO_BONUS} carats).`);
   }
 }
 
@@ -123,7 +123,7 @@ function applyCardEffect(room: RoomState, player: PlayerPublic, card: GameCard) 
       player.money += effect.amount;
       pushLog(
         room,
-        `${player.name}: ${card.text} (${effect.amount >= 0 ? '+' : ''}¥${effect.amount})`,
+        `${player.name}: ${card.text} (${effect.amount >= 0 ? '+' : ''}${effect.amount} carats)`,
       );
       tryBankrupt(room, player);
       room.pending = { type: 'none' };
@@ -395,7 +395,7 @@ export class RoomManager {
     player.money -= price;
     room.ownership[spaceId] = player.id;
     const space = spaceAt(room, spaceId);
-    pushLog(room, `${player.name} acquired ${space.name} for ¥${price}.`);
+    pushLog(room, `${player.name} acquired ${space.name} for ${price} carats.`);
     room.pending = { type: 'none' };
     this.afterAction(room);
     return room;
@@ -421,7 +421,7 @@ export class RoomManager {
       player.money -= amount;
       owner.money += amount;
       const space = spaceAt(room, spaceId);
-      pushLog(room, `${player.name} paid ¥${amount} rent to ${owner.name} at ${space.name}.`);
+      pushLog(room, `${player.name} paid ${amount} carats rent to ${owner.name} at ${space.name}.`);
       tryBankrupt(room, player);
       room.pending = { type: 'none' };
       this.afterAction(room);
@@ -430,7 +430,7 @@ export class RoomManager {
     if (room.pending.type === 'pay_tax') {
       const { amount } = room.pending;
       player.money -= amount;
-      pushLog(room, `${player.name} paid ¥${amount} in fees.`);
+      pushLog(room, `${player.name} paid ${amount} carats in fees.`);
       tryBankrupt(room, player);
       room.pending = { type: 'none' };
       this.afterAction(room);
@@ -467,7 +467,7 @@ export class RoomManager {
       player.money -= JAIL_FINE;
       player.inJail = false;
       player.jailTurns = 0;
-      pushLog(room, `${player.name} paid ¥${JAIL_FINE} to leave Rest Box.`);
+      pushLog(room, `${player.name} paid ${JAIL_FINE} carats to leave Rest Box.`);
       tryBankrupt(room, player);
       room.pending = { type: 'none' };
       room.canRoll = true;
@@ -506,7 +506,7 @@ export class RoomManager {
       player.money -= JAIL_FINE;
       player.inJail = false;
       player.jailTurns = 0;
-      pushLog(room, `${player.name} must pay ¥${JAIL_FINE} after 3 turns.`);
+      pushLog(room, `${player.name} must pay ${JAIL_FINE} carats after 3 turns.`);
       tryBankrupt(room, player);
       room.pending = { type: 'none' };
       moveRelative(room, player, d1 + d2);
