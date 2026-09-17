@@ -1,5 +1,6 @@
 import type { BoardSpace, PlayerPublic, RoomState } from '../lib/types';
 import { Carats } from './Carats';
+import { DiceRoll } from './DiceRoll';
 
 type Props = {
   room: RoomState;
@@ -77,13 +78,10 @@ export function Board({ room }: Props) {
       <div className="board-center">
         <p className="brand-sm">Property Training</p>
         <p className="board-center-sub">Lobby {room.code}</p>
-        {room.lastDice ? (
-          <p className="dice-readout">
-            {room.lastDice[0]} + {room.lastDice[1]}
-          </p>
-        ) : (
-          <p className="dice-readout muted">Roll when ready</p>
-        )}
+        <DiceRoll
+          dice={room.lastDice}
+          animKey={room.lastDice ? `${room.log[0] ?? ''}:${room.lastDice.join('-')}` : ''}
+        />
       </div>
 
       <div className="edge bottom">
