@@ -40,7 +40,7 @@ export function GameScreen({ room, selfId }: Props) {
   return (
     <div className="game-page">
       <aside className="sidebar">
-        <p className="brand-sm">Property Training</p>
+        <p className="brand-sm">Tracen Trading Training</p>
         <h2 className="turn-line">
           {room.phase === 'finished'
             ? `${winner?.name ?? 'Someone'} wins!`
