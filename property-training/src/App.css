@@ -68,10 +68,9 @@ button {
 }
 
 .brand {
-  font-size: clamp(2.6rem, 9vw, 5rem);
-  line-height: 0.95;
+  font-size: clamp(2.2rem, 7.5vw, 4.2rem);
+  line-height: 0.92;
   text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
-  max-width: none;
 }
 
 .brand-sm {
@@ -136,11 +135,12 @@ button {
   min-height: 100vh;
   display: grid;
   align-content: center;
-  gap: 1.75rem;
-  padding: 2rem clamp(1.25rem, 5vw, 4rem);
+  gap: 1.5rem;
+  padding: 1.75rem clamp(1.25rem, 5vw, 4rem) 2.5rem;
   max-width: 1100px;
   margin: 0 auto;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   isolation: isolate;
 }
 
@@ -179,7 +179,7 @@ button {
 
 .home-hero {
   position: relative;
-  max-width: 16ch;
+  max-width: min(100%, 22rem);
 }
 
 .home-hero h1 {
