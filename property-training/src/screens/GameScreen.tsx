@@ -78,7 +78,7 @@ export function GameScreen({ room, selfId }: Props) {
                   <div className="muted">
                     {chara ? `${chara.name} · ` : ''}
                     {p.bankrupt ? 'Out' : <Carats amount={p.money} />}
-                    {p.inJail ? ' · Rest Box' : ''}
+                    {p.inJail ? ' · Infirmary' : ''}
                   </div>
                 </div>
               </li>
@@ -156,7 +156,7 @@ export function GameScreen({ room, selfId }: Props) {
               room.pending.type === 'none') &&
             (room.canRoll || room.pending.type === 'jail_choice') && (
               <div className="action-stack">
-                <p>Rest Box — choose an exit</p>
+                <p>Infirmary — choose an exit</p>
                 <button className="btn primary" onClick={() => void run(() => jailAction('roll'))}>
                   Roll for doubles
                 </button>

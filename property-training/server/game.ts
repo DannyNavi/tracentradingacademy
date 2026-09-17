@@ -113,7 +113,7 @@ function sendToJail(room: RoomState, player: PlayerPublic) {
   room.doublesCount = 0;
   room.canRoll = false;
   room.pending = { type: 'none' };
-  pushLog(room, `${player.name} is sent to the Rest Box.`);
+  pushLog(room, `${player.name} is sent to the Infirmary.`);
 }
 
 function applyCardEffect(room: RoomState, player: PlayerPublic, card: GameCard) {
@@ -390,7 +390,7 @@ export class RoomManager {
     else room.doublesCount = 0;
 
     if (room.doublesCount >= 3) {
-      pushLog(room, `${player.name} rolled triples doubles — Rest Box!`);
+      pushLog(room, `${player.name} rolled triples doubles — Infirmary!`);
       sendToJail(room, player);
       return room;
     }
@@ -476,7 +476,7 @@ export class RoomManager {
   jailAction(socketId: string, action: 'pay' | 'card' | 'roll'): RoomState {
     const room = this.requireTurn(socketId);
     const player = currentPlayer(room);
-    if (!player.inJail) throw new Error('Not in Rest Box');
+    if (!player.inJail) throw new Error('Not in Infirmary');
 
     // Allow initiating jail choice via roll when in jail
     if (room.pending.type === 'none' && room.canRoll) {
@@ -489,7 +489,7 @@ export class RoomManager {
       player.money -= JAIL_FINE;
       player.inJail = false;
       player.jailTurns = 0;
-      pushLog(room, `${player.name} paid ${JAIL_FINE} carats to leave Rest Box.`);
+      pushLog(room, `${player.name} paid ${JAIL_FINE} carats to leave Infirmary.`);
       tryBankrupt(room, player);
       room.pending = { type: 'none' };
       room.canRoll = true;
@@ -501,7 +501,7 @@ export class RoomManager {
       player.getOutCards -= 1;
       player.inJail = false;
       player.jailTurns = 0;
-      pushLog(room, `${player.name} used a free Rest Box pass.`);
+      pushLog(room, `${player.name} used a free Infirmary pass.`);
       room.pending = { type: 'none' };
       room.canRoll = true;
       return room;
@@ -514,7 +514,7 @@ export class RoomManager {
     if (d1 === d2) {
       player.inJail = false;
       player.jailTurns = 0;
-      pushLog(room, `${player.name} rolled doubles (${d1}+${d2}) and leaves Rest Box!`);
+      pushLog(room, `${player.name} rolled doubles (${d1}+${d2}) and leaves Infirmary!`);
       room.pending = { type: 'none' };
       moveRelative(room, player, d1 + d2);
       resolveLanding(room, player, d1 + d2);
