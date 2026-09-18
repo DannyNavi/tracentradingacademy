@@ -1065,6 +1065,71 @@ select:focus {
   background: linear-gradient(160deg, var(--kind-jail-a), var(--kind-jail-b));
 }
 
+.cell-infirmary {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  padding: 0;
+}
+
+.cell-art--infirmary {
+  object-position: 42% 55%;
+}
+
+.infirmary-in {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.infirmary-in .cell-name {
+  font-size: 0.5rem;
+  -webkit-line-clamp: 1;
+}
+
+.cell-tokens-infirmary {
+  position: static;
+  margin-top: auto;
+  max-width: 100%;
+}
+
+.infirmary-visit {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 22%;
+  padding: 2px 3px;
+  background: rgba(18, 22, 28, 0.72);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.infirmary-visit-label {
+  flex: 1;
+  min-width: 0;
+  color: #fff;
+  font-size: 0.42rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.cell-tokens-visit {
+  position: static;
+  max-width: 55%;
+  justify-content: flex-end;
+}
+
+.cell-tokens-visit .token-chara {
+  width: 14px;
+  height: 14px;
+}
+
 .kind-gotojail {
   background: linear-gradient(160deg, var(--kind-gotojail-a), var(--kind-gotojail-b));
   display: flex;
