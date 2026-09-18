@@ -140,7 +140,7 @@ export function GameScreen({ room, selfId }: Props) {
                 <img className="fuji-card-art" src="/fuji-hat.png" alt="" />
               ) : null}
               <p className="eyebrow">
-                {room.pending.deck === 'chance' ? "Fuji's Hat" : 'Support Event'}
+                {room.pending.deck === 'chance' ? "Fuji's Hat" : 'Raffle Ticket'}
               </p>
               <p>{room.pending.card.text}</p>
               <button className="btn primary" onClick={() => void run(resolveCard)}>
