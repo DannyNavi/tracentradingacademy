@@ -1022,12 +1022,12 @@ select:focus {
   background: #fff;
 }
 
-.cell-has-cafeteria {
+.cell-has-art {
   background: #2a2420;
   padding: 0;
 }
 
-.cell-cafeteria {
+.cell-art {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -1038,10 +1038,11 @@ select:focus {
   z-index: 0;
 }
 
-.cell-has-cafeteria .cell-name,
-.cell-has-cafeteria .cell-price,
-.cell-has-cafeteria .cell-tokens,
-.cell-has-cafeteria .cell-owner {
+.cell-has-art .cell-name,
+.cell-has-art .cell-price,
+.cell-has-art .cell-tokens,
+.cell-has-art .cell-owner,
+.cell-has-art .cell-stripe {
   position: relative;
   z-index: 1;
 }
