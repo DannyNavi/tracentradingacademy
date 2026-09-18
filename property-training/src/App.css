@@ -1158,6 +1158,10 @@ select:focus {
   object-fit: cover;
 }
 
+.cell-art--stump {
+  object-position: 58% 55%;
+}
+
 .cell-art--contain {
   object-fit: contain;
   padding: 10% 6% 18%;
