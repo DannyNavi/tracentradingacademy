@@ -19,7 +19,7 @@ function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } |
   if (space.kind === 'utility' && space.name === 'Cafeteria') {
     return { src: '/cafeteria.png', fit: 'cover' };
   }
-  if (space.id === 3 || space.name === 'Echo Stump') {
+  if (space.id === 3 || space.name === 'The Stump') {
     return { src: '/echo-stump.png', fit: 'cover' };
   }
   if (space.id === 39 || space.name === 'Hot Spring Getaway') {
@@ -55,7 +55,7 @@ function BoardCell({
     >
       {art ? (
         <img
-          className={`cell-art cell-art--${art.fit}${space.name === 'Echo Stump' ? ' cell-art--stump' : ''}`}
+          className={`cell-art cell-art--${art.fit}${space.name === 'The Stump' ? ' cell-art--stump' : ''}`}
           src={art.src}
           alt=""
           draggable={false}
