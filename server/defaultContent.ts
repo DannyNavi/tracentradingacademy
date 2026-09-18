@@ -14,7 +14,7 @@ export const DEFAULT_SPACES: BoardSpace[] = [
   { id: 9, kind: 'property', name: 'Turf Stretch C', price: 120, rent: 8, group: 'turf-a', color: '#2F6B3A' },
   { id: 10, kind: 'jail', name: 'Infirmary' },
   { id: 11, kind: 'property', name: 'Sprint Hill', price: 140, rent: 10, group: 'hill', color: '#3B6EA5' },
-  { id: 12, kind: 'utility', name: 'Feed Mill', price: 150, rent: 0 },
+  { id: 12, kind: 'utility', name: 'Cafeteria', price: 150, rent: 0 },
   { id: 13, kind: 'property', name: 'Corner Curve', price: 140, rent: 10, group: 'hill', color: '#3B6EA5' },
   { id: 14, kind: 'property', name: 'Home Stretch Rise', price: 160, rent: 12, group: 'hill', color: '#3B6EA5' },
   { id: 15, kind: 'rail', name: 'Osaka Transport', price: 200, rent: 25 },
