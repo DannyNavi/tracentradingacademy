@@ -15,9 +15,13 @@ function tokensOn(spaceId: number, players: PlayerPublic[]) {
   return players.filter((p) => !p.bankrupt && p.position === spaceId);
 }
 
-function cellArt(space: BoardSpace): string | null {
-  if (space.kind === 'utility' && space.name === 'Cafeteria') return '/cafeteria.png';
-  if (space.id === 39 || space.name === 'Hot Spring Getaway') return '/hot-spring-getaway.png';
+function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } | null {
+  if (space.kind === 'utility' && space.name === 'Cafeteria') {
+    return { src: '/cafeteria.png', fit: 'cover' };
+  }
+  if (space.id === 39 || space.name === 'Hot Spring Getaway') {
+    return { src: '/hot-spring-getaway.png', fit: 'contain' };
+  }
   return null;
 }
 
@@ -38,7 +42,7 @@ function BoardCell({
 
   return (
     <div
-      className={`cell kind-${space.kind}${hasArt ? ' cell-has-art' : ''}`}
+      className={`cell kind-${space.kind}${hasArt ? ` cell-has-art cell-art-${art!.fit}` : ''}`}
       style={{ ['--group' as string]: space.color || 'transparent' }}
       title={
         space.price
@@ -46,7 +50,9 @@ function BoardCell({
           : space.name
       }
     >
-      {art ? <img className="cell-art" src={art} alt="" draggable={false} /> : null}
+      {art ? (
+        <img className={`cell-art cell-art--${art.fit}`} src={art.src} alt="" draggable={false} />
+      ) : null}
       {(space.kind === 'property' || space.kind === 'rail' || space.kind === 'utility') && !hasArt ? (
         <div className="cell-stripe" />
       ) : null}
