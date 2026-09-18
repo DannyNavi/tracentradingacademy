@@ -6,10 +6,9 @@ import type { RoomState } from '../lib/types';
 type Props = {
   room: RoomState;
   selfId: string;
-  onEditBoard: () => void;
 };
 
-export function LobbyScreen({ room, selfId, onEditBoard }: Props) {
+export function LobbyScreen({ room, selfId }: Props) {
   const isHost = room.hostId === selfId;
   const me = room.players.find((p) => p.id === selfId);
   const [error, setError] = useState('');
@@ -108,18 +107,13 @@ export function LobbyScreen({ room, selfId, onEditBoard }: Props) {
 
       <div className="lobby-actions">
         {isHost ? (
-          <>
-            <button className="btn ghost" onClick={onEditBoard}>
-              Edit board & events
-            </button>
-            <button
-              className="btn primary"
-              disabled={busy || !allReady}
-              onClick={() => void handleStart()}
-            >
-              Start game
-            </button>
-          </>
+          <button
+            className="btn primary"
+            disabled={busy || !allReady}
+            onClick={() => void handleStart()}
+          >
+            Start game
+          </button>
         ) : (
           <p className="muted">
             {me?.characterId
