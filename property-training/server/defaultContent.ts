@@ -3,7 +3,7 @@ import type { BoardSpace, GameCard, GameContent } from './types.js';
 /** Classic 40-space layout with horse-training themed defaults (fully editable by host). */
 export const DEFAULT_SPACES: BoardSpace[] = [
   { id: 0, kind: 'go', name: 'Collect Race Earnings' },
-  { id: 1, kind: 'property', name: 'Dirt Warmup Lane', price: 60, rent: 2, group: 'dirt-a', color: '#8B5A2B' },
+  { id: 1, kind: 'property', name: "Tama's House", price: 60, rent: 2, group: 'dirt-a', color: '#8B5A2B' },
   { id: 2, kind: 'community', name: 'Raffle Ticket' },
   { id: 3, kind: 'property', name: 'The Stump', price: 60, rent: 4, group: 'dirt-a', color: '#8B5A2B' },
   { id: 4, kind: 'tax', name: 'Entry Fee', taxAmount: 200 },
