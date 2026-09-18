@@ -24,19 +24,25 @@ npm start
 
 Serves the Vite build from Express on `PORT` (default `3001`). Health check: `GET /health`.
 
-### Deploy on Render
+### Deploy on Railway (recommended — no cold starts)
 
-1. Push this repo to GitHub.
-2. In [Render](https://render.com), **New → Blueprint** and select the repo (uses `render.yaml`), or create a **Web Service** with:
-   - **Build:** `npm install && npm run build`
-   - **Start:** `npm start`
-   - **Health check path:** `/health`
-3. Open the `*.onrender.com` URL.
+Railway keeps the service running 24/7 by default (do **not** enable Serverless/App Sleeping). Hobby is about **$5/month**.
 
-Free Render services sleep after ~15 minutes idle; the first request after sleep can take ~30–60s.
+1. Go to [railway.com/new](https://railway.com/new) and sign in with GitHub.
+2. **Deploy from GitHub repo** → select `DannyNavi/tracentradingacademy`.
+3. Railway detects `railway.json` (build + start + `/health`).
+4. Generate a public domain under **Settings → Networking**.
+5. Open the `*.up.railway.app` URL.
+
+### Deploy on Render (free, but cold starts)
+
+Free Render web services sleep after ~15 minutes idle. Prefer Railway if you want instant joins.
+
+Uses `render.yaml` Blueprint: build `npm install && npm run build`, start `npm start`, health `/health`.
 
 ## Notes
 
 - Persistent player IDs keep you in the lobby across page refresh.
 - Default board names are fixed (no host rename editor).
 - Turn-based play stays comfortable over normal internet latency.
+- In-memory lobbies reset if the process restarts (deploys, crashes).
