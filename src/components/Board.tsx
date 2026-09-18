@@ -19,6 +19,9 @@ function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } |
   if (space.kind === 'utility' && space.name === 'Cafeteria') {
     return { src: '/cafeteria.png', fit: 'cover' };
   }
+  if (space.id === 3 || space.name === 'Echo Stump') {
+    return { src: '/echo-stump.png', fit: 'cover' };
+  }
   if (space.id === 39 || space.name === 'Hot Spring Getaway') {
     return { src: '/hot-spring-getaway.png', fit: 'contain' };
   }
@@ -51,9 +54,15 @@ function BoardCell({
       }
     >
       {art ? (
-        <img className={`cell-art cell-art--${art.fit}`} src={art.src} alt="" draggable={false} />
+        <img
+          className={`cell-art cell-art--${art.fit}${space.name === 'Echo Stump' ? ' cell-art--stump' : ''}`}
+          src={art.src}
+          alt=""
+          draggable={false}
+        />
       ) : null}
-      {(space.kind === 'property' || space.kind === 'rail' || space.kind === 'utility') && !hasArt ? (
+      {(space.kind === 'property' || space.kind === 'rail' || space.kind === 'utility') &&
+      (!hasArt || space.kind === 'property') ? (
         <div className="cell-stripe" />
       ) : null}
       {space.kind === 'chance' ? (
