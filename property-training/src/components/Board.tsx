@@ -7,10 +7,16 @@ type Props = {
   room: RoomState;
   canRoll?: boolean;
   onRoll?: () => void;
+  /** Hide lobby code / roll UI for static map preview */
+  preview?: boolean;
 };
 
 function tokensOn(spaceId: number, players: PlayerPublic[]) {
   return players.filter((p) => !p.bankrupt && p.position === spaceId);
+}
+
+function isCafeteria(space: BoardSpace) {
+  return space.kind === 'utility' && space.name === 'Cafeteria';
 }
 
 function BoardCell({
@@ -25,10 +31,11 @@ function BoardCell({
   const here = tokensOn(space.id, players);
   const ownerId = ownership[space.id];
   const owner = players.find((p) => p.id === ownerId);
+  const cafeteria = isCafeteria(space);
 
   return (
     <div
-      className={`cell kind-${space.kind}`}
+      className={`cell kind-${space.kind}${cafeteria ? ' cell-has-cafeteria' : ''}`}
       style={{ ['--group' as string]: space.color || 'transparent' }}
       title={
         space.price
@@ -36,9 +43,18 @@ function BoardCell({
           : space.name
       }
     >
-      {(space.kind === 'property' || space.kind === 'rail' || space.kind === 'utility') && (
+      {cafeteria ? (
+        <img
+          className="cell-cafeteria"
+          src="/cafeteria.png"
+          alt=""
+          draggable={false}
+        />
+      ) : null}
+      {(space.kind === 'property' || space.kind === 'rail' || space.kind === 'utility') &&
+      !cafeteria ? (
         <div className="cell-stripe" />
-      )}
+      ) : null}
       {space.kind === 'chance' ? (
         <img className="cell-fuji" src="/fuji-hat.png" alt="" draggable={false} />
       ) : null}
@@ -51,10 +67,10 @@ function BoardCell({
         />
       ) : null}
       {space.kind !== 'gotojail' ? (
-        <div className="cell-name">{space.name}</div>
+        <div className={`cell-name${cafeteria ? ' cell-name-on-art' : ''}`}>{space.name}</div>
       ) : null}
       {space.price ? (
-        <div className="cell-price">
+        <div className={`cell-price${cafeteria ? ' cell-price-on-art' : ''}`}>
           <Carats amount={space.price} />
         </div>
       ) : null}
@@ -85,28 +101,28 @@ function BoardCell({
  * bottom ← left ↑ top → right ↓ back to GO.
  * CSS grids fill left→right / top→bottom.
  */
-export function Board({ room, canRoll = false, onRoll }: Props) {
+export function Board({ room, canRoll = false, onRoll, preview = false }: Props) {
   const spaces = room.content.properties;
   const byId = (id: number) => spaces.find((s) => s.id === id)!;
 
-  // Bottom L→R: Infirmary … browns … Starting Gate (GO at bottom-right)
   const bottomLeftToRight = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
-  // Left T→B: just below Winner's Circle down to just above Infirmary
   const leftTopToBottom = [19, 18, 17, 16, 15, 14, 13, 12, 11];
-  // Top L→R: Winner's Circle … New Condition Slacker
   const topLeftToRight = [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
-  // Right T→B: Grand Lawn … Crown Stakes (immediately above Starting Gate)
   const rightTopToBottom = [31, 32, 33, 34, 35, 36, 37, 38, 39];
 
   return (
     <div className="board">
       <div className="board-center">
         <p className="brand-sm">Tracen Trading Academy</p>
-        <p className="board-center-sub">Lobby {room.code}</p>
-        <DiceRoll
-          dice={room.lastDice}
-          animKey={room.lastDice ? `${room.log[0] ?? ''}:${room.lastDice.join('-')}` : ''}
-        />
+        <p className="board-center-sub">{preview ? 'Board preview' : `Lobby ${room.code}`}</p>
+        {!preview ? (
+          <DiceRoll
+            dice={room.lastDice}
+            animKey={room.lastDice ? `${room.log[0] ?? ''}:${room.lastDice.join('-')}` : ''}
+          />
+        ) : (
+          <p className="muted board-preview-hint">Static map — no lobby needed</p>
+        )}
         {canRoll && onRoll ? (
           <button type="button" className="btn primary board-roll-btn" onClick={onRoll}>
             Roll dice
