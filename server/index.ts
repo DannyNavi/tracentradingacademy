@@ -5,6 +5,7 @@ import path from 'path';
 import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
 import { RoomManager } from './game.js';
+import { defaultContent } from './defaultContent.js';
 import type { GameContent } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -19,6 +20,10 @@ app.use(express.json());
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ ok: true });
+});
+
+app.get('/api/default-content', (_req, res) => {
+  res.json(defaultContent());
 });
 
 const rooms = new RoomManager();

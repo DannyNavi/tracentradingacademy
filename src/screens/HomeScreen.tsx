@@ -5,9 +5,10 @@ import type { RoomState } from '../lib/types';
 
 type Props = {
   onJoined: (room: RoomState, selfId: string) => void;
+  onPreviewBoard?: () => void;
 };
 
-export function HomeScreen({ onJoined }: Props) {
+export function HomeScreen({ onJoined, onPreviewBoard }: Props) {
   const [name, setName] = useState(() => localStorage.getItem('pt-name') || '');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -74,6 +75,11 @@ export function HomeScreen({ onJoined }: Props) {
           <button type="submit" className="btn primary" disabled={busy}>
             Create lobby
           </button>
+          {onPreviewBoard ? (
+            <button type="button" className="btn ghost" disabled={busy} onClick={onPreviewBoard}>
+              Preview board
+            </button>
+          ) : null}
         </div>
 
         <div className="join-row">

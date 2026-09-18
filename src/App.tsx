@@ -2,21 +2,45 @@ import { useEffect, useRef, useState } from 'react';
 import { GameScreen } from './screens/GameScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
+import { BoardPreviewScreen } from './screens/BoardPreviewScreen';
 import { clearSession, getPlayerId, loadSession, saveSession } from './lib/session';
 import { rejoinLobby, socket } from './lib/socket';
 import type { RoomState } from './lib/types';
 import './App.css';
 
-type View = 'home' | 'lobby' | 'game';
+type View = 'home' | 'lobby' | 'game' | 'preview';
+
+function pathIsPreview() {
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  return path === '/preview' || window.location.hash === '#preview';
+}
 
 export default function App() {
   const [room, setRoom] = useState<RoomState | null>(null);
   const [selfId, setSelfId] = useState(() => getPlayerId());
   const [connected, setConnected] = useState(socket.connected);
-  const [rejoining, setRejoining] = useState(() => Boolean(loadSession()));
+  const [rejoining, setRejoining] = useState(() => Boolean(loadSession()) && !pathIsPreview());
+  const [preview, setPreview] = useState(() => pathIsPreview());
   const rejoinedRef = useRef(false);
 
   useEffect(() => {
+    function syncPreviewFromUrl() {
+      setPreview(pathIsPreview());
+    }
+    window.addEventListener('popstate', syncPreviewFromUrl);
+    window.addEventListener('hashchange', syncPreviewFromUrl);
+    return () => {
+      window.removeEventListener('popstate', syncPreviewFromUrl);
+      window.removeEventListener('hashchange', syncPreviewFromUrl);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (preview) {
+      setRejoining(false);
+      return;
+    }
+
     async function tryRejoin() {
       const session = loadSession();
       if (!session) {
@@ -62,18 +86,30 @@ export default function App() {
       socket.off('disconnect', onDisconnect);
       socket.off('room:state', onState);
     };
-  }, []);
+  }, [preview]);
+
+  function openPreview() {
+    window.history.pushState({}, '', '/preview');
+    setPreview(true);
+  }
+
+  function closePreview() {
+    window.history.pushState({}, '', '/');
+    setPreview(false);
+  }
 
   let view: View = 'home';
-  if (room) {
+  if (preview) view = 'preview';
+  else if (room) {
     if (room.phase === 'lobby' || room.phase === 'config') view = 'lobby';
     else view = 'game';
   }
 
   return (
     <div className="app-shell">
-      {!connected ? <div className="banner">Connecting to server…</div> : null}
-      {connected && rejoining ? <div className="banner">Rejoining lobby…</div> : null}
+      {!preview && !connected ? <div className="banner">Connecting to server…</div> : null}
+      {!preview && connected && rejoining ? <div className="banner">Rejoining lobby…</div> : null}
+      {view === 'preview' && <BoardPreviewScreen onBack={closePreview} />}
       {view === 'home' && !rejoining && (
         <HomeScreen
           onJoined={(r, id) => {
@@ -81,6 +117,7 @@ export default function App() {
             setSelfId(id);
             saveSession(r.code, id);
           }}
+          onPreviewBoard={openPreview}
         />
       )}
       {view === 'lobby' && room && <LobbyScreen room={room} selfId={selfId} />}
