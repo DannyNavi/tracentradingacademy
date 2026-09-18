@@ -95,9 +95,11 @@ function BoardCell({
       title={
         space.price
           ? `${space.name} · ${space.price} carats`
-          : isJail
-            ? 'Infirmary · Just Visiting'
-            : space.name
+          : space.kind === 'tax' && space.taxAmount
+            ? `${space.name} · -${space.taxAmount} carats`
+            : isJail
+              ? 'Infirmary · Just Visiting'
+              : space.name
       }
     >
       {art ? (
@@ -148,6 +150,11 @@ function BoardCell({
           {space.kind === 'go' ? (
             <div className="cell-price">
               <Carats amount={200} signed />
+            </div>
+          ) : null}
+          {space.kind === 'tax' && space.taxAmount ? (
+            <div className="cell-price">
+              <Carats amount={-space.taxAmount} />
             </div>
           ) : null}
           {space.price ? (

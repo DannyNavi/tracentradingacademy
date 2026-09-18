@@ -6,7 +6,7 @@ export const DEFAULT_SPACES: BoardSpace[] = [
   { id: 1, kind: 'property', name: "Tama's House", price: 60, rent: 2, group: 'dirt-a', color: '#8B5A2B' },
   { id: 2, kind: 'community', name: 'Raffle Ticket' },
   { id: 3, kind: 'property', name: 'The Stump', price: 60, rent: 4, group: 'dirt-a', color: '#8B5A2B' },
-  { id: 4, kind: 'tax', name: 'Entry Fee', taxAmount: 200 },
+  { id: 4, kind: 'tax', name: 'Race Entry Fee', taxAmount: 200 },
   { id: 5, kind: 'rail', name: 'Tracen Gym', price: 200, rent: 25 },
   { id: 6, kind: 'property', name: 'Turf Stretch A', price: 100, rent: 6, group: 'turf-a', color: '#2F6B3A' },
   { id: 7, kind: 'chance', name: "Fuji's Hat" },
@@ -40,7 +40,7 @@ export const DEFAULT_SPACES: BoardSpace[] = [
   { id: 35, kind: 'rail', name: 'Sapporo Transport', price: 200, rent: 25 },
   { id: 36, kind: 'chance', name: "Fuji's Hat" },
   { id: 37, kind: 'property', name: 'Hot Spring Getaway', price: 350, rent: 35, group: 'champ', color: '#1F4E79' },
-  { id: 38, kind: 'tax', name: 'Trainer License Tax', taxAmount: 100 },
+  { id: 38, kind: 'tax', name: 'Trainer Fee', taxAmount: 100 },
   { id: 39, kind: 'property', name: 'Mejiro Mansion', price: 400, rent: 50, group: 'champ', color: '#1F4E79' },
 ];
 
