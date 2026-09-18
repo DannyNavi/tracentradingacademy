@@ -7,7 +7,7 @@ export const DEFAULT_SPACES: BoardSpace[] = [
   { id: 2, kind: 'community', name: 'Raffle Ticket' },
   { id: 3, kind: 'property', name: 'The Stump', price: 60, rent: 4, group: 'dirt-a', color: '#8B5A2B' },
   { id: 4, kind: 'tax', name: 'Entry Fee', taxAmount: 200 },
-  { id: 5, kind: 'rail', name: 'Tokyo Transport', price: 200, rent: 25 },
+  { id: 5, kind: 'rail', name: 'Tracen Gym', price: 200, rent: 25 },
   { id: 6, kind: 'property', name: 'Turf Stretch A', price: 100, rent: 6, group: 'turf-a', color: '#2F6B3A' },
   { id: 7, kind: 'chance', name: "Fuji's Hat" },
   { id: 8, kind: 'property', name: 'Turf Stretch B', price: 100, rent: 6, group: 'turf-a', color: '#2F6B3A' },
