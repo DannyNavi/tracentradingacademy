@@ -18,10 +18,80 @@
   --radius-sm: 12px;
   --font-display: 'Fredoka', 'Nunito', sans-serif;
   --font-body: 'Nunito', 'Segoe UI', sans-serif;
+  --body-glow-a: rgba(142, 212, 42, 0.28);
+  --body-glow-b: rgba(240, 160, 32, 0.12);
+  --body-grad-top: #f7faf5;
+  --body-grad-mid: #e8f0e2;
+  --body-grad-bot: #e3ebe0;
+  --brand-halo: rgba(255, 255, 255, 0.65);
+  --danger-soft: #fff5f3;
+  --board-center: #f4faee;
+  --board-mid: #dcecdb;
+  --board-edge: #c8dcc0;
+  --die-face-a: #ffffff;
+  --die-face-b: #f0f4ec;
+  --die-pip: #3f3a35;
+  --cell-fill: rgba(255, 255, 255, 0.92);
+  --kind-go-a: #e8f6d0;
+  --kind-go-b: #ffffff;
+  --kind-chance-a: #fff7e0;
+  --kind-chance-b: #ffffff;
+  --kind-community-a: #e4f1ff;
+  --kind-community-b: #ffffff;
+  --kind-jail-a: #ffe4e0;
+  --kind-jail-b: #ffffff;
+  --kind-gotojail-a: #dcecff;
+  --kind-gotojail-b: #ffffff;
+  --kind-plain: #ffffff;
+  --token-ring: #fff;
   color: var(--ink);
   font-family: var(--font-body);
   background: var(--bg);
   line-height: 1.45;
+}
+
+html[data-theme='dark'] {
+  --bg: #1c1915;
+  --bg-soft: #26221c;
+  --surface: #302b24;
+  --accent: #7ec82a;
+  --accent-deep: #a6d85a;
+  --accent-soft: #2a3220;
+  --header-a: #6fb01e;
+  --header-b: #4a8a12;
+  --ink: #f2ebe2;
+  --muted: #b0a79b;
+  --gold: #f0b040;
+  --danger: #f07a6c;
+  --line: rgba(242, 235, 226, 0.12);
+  --shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 3px 12px rgba(0, 0, 0, 0.35);
+  --body-glow-a: rgba(110, 160, 40, 0.18);
+  --body-glow-b: rgba(200, 130, 40, 0.1);
+  --body-grad-top: #221e18;
+  --body-grad-mid: #1a1713;
+  --body-grad-bot: #15120f;
+  --brand-halo: rgba(0, 0, 0, 0.35);
+  --danger-soft: #3a2420;
+  --board-center: #2a3224;
+  --board-mid: #232a1e;
+  --board-edge: #1c2218;
+  --die-face-a: #3a342c;
+  --die-face-b: #2c2822;
+  --die-pip: #f2ebe2;
+  --cell-fill: rgba(48, 43, 36, 0.94);
+  --kind-go-a: #2f3a22;
+  --kind-go-b: #302b24;
+  --kind-chance-a: #3a3220;
+  --kind-chance-b: #302b24;
+  --kind-community-a: #243040;
+  --kind-community-b: #302b24;
+  --kind-jail-a: #3a2824;
+  --kind-jail-b: #302b24;
+  --kind-gotojail-a: #243040;
+  --kind-gotojail-b: #302b24;
+  --kind-plain: #302b24;
+  --token-ring: #302b24;
 }
 
 * {
@@ -37,11 +107,47 @@ body,
 
 body {
   background:
-    radial-gradient(ellipse 90% 60% at 80% 0%, rgba(142, 212, 42, 0.28), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 10% 90%, rgba(240, 160, 32, 0.12), transparent 50%),
-    linear-gradient(180deg, #f7faf5 0%, #e8f0e2 45%, #e3ebe0 100%);
+    radial-gradient(ellipse 90% 60% at 80% 0%, var(--body-glow-a), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 10% 90%, var(--body-glow-b), transparent 50%),
+    linear-gradient(180deg, var(--body-grad-top) 0%, var(--body-grad-mid) 45%, var(--body-grad-bot) 100%);
   min-height: 100vh;
   color: var(--ink);
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem 0.45rem 0.65rem;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.theme-toggle-icon {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--accent-deep);
+}
+
+.theme-toggle-label {
+  letter-spacing: 0.02em;
 }
 
 button,
@@ -152,7 +258,7 @@ button {
 .btn.danger {
   border-color: rgba(232, 93, 76, 0.35);
   color: var(--danger);
-  background: #fff5f3;
+  background: var(--danger-soft);
 }
 
 .home {
@@ -648,7 +754,7 @@ select:focus {
   width: calc(var(--cell) * 11);
   height: calc(var(--cell) * 11);
   background:
-    radial-gradient(circle at center, #f4faee, #dcecdb 70%, #c8dcc0),
+    radial-gradient(circle at center, var(--board-center), var(--board-mid) 70%, var(--board-edge)),
     repeating-linear-gradient(
       0deg,
       rgba(107, 194, 0, 0.06) 0 1px,
@@ -708,7 +814,7 @@ select:focus {
   width: 52px;
   height: 52px;
   border-radius: 12px;
-  background: linear-gradient(145deg, #ffffff 0%, #f0f4ec 100%);
+  background: linear-gradient(145deg, var(--die-face-a) 0%, var(--die-face-b) 100%);
   border: 2px solid rgba(63, 58, 53, 0.18);
   box-shadow: var(--shadow-sm);
   display: grid;
@@ -726,7 +832,7 @@ select:focus {
 }
 
 .pip.on {
-  background: #3f3a35;
+  background: var(--die-pip);
 }
 
 .dice-total {
@@ -822,7 +928,7 @@ select:focus {
 .cell {
   position: relative;
   border: 1px solid rgba(63, 58, 53, 0.1);
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--cell-fill);
   overflow: hidden;
   padding: 2px;
   min-width: 0;
@@ -913,11 +1019,11 @@ select:focus {
 
 .kind-go,
 .kind-free {
-  background: linear-gradient(160deg, #e8f6d0, #ffffff);
+  background: linear-gradient(160deg, var(--kind-go-a), var(--kind-go-b));
 }
 
 .kind-chance {
-  background: linear-gradient(160deg, #fff7e0, #ffffff);
+  background: linear-gradient(160deg, var(--kind-chance-a), var(--kind-chance-b));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -952,15 +1058,15 @@ select:focus {
 }
 
 .kind-community {
-  background: linear-gradient(160deg, #e4f1ff, #ffffff);
+  background: linear-gradient(160deg, var(--kind-community-a), var(--kind-community-b));
 }
 
 .kind-jail {
-  background: linear-gradient(160deg, #ffe4e0, #ffffff);
+  background: linear-gradient(160deg, var(--kind-jail-a), var(--kind-jail-b));
 }
 
 .kind-gotojail {
-  background: linear-gradient(160deg, #dcecff, #ffffff);
+  background: linear-gradient(160deg, var(--kind-gotojail-a), var(--kind-gotojail-b));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1019,7 +1125,7 @@ select:focus {
 
 .kind-rail,
 .kind-utility {
-  background: #fff;
+  background: var(--kind-plain);
 }
 
 .cell-has-art {

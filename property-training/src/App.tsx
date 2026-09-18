@@ -3,8 +3,15 @@ import { GameScreen } from './screens/GameScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { BoardPreviewScreen } from './screens/BoardPreviewScreen';
+import { ThemeToggle } from './components/ThemeToggle';
 import { clearSession, getPlayerId, loadSession, saveSession } from './lib/session';
 import { rejoinLobby, socket } from './lib/socket';
+import {
+  applyTheme,
+  resolveTheme,
+  saveTheme,
+  type ThemeMode,
+} from './lib/theme';
 import type { RoomState } from './lib/types';
 import './App.css';
 
@@ -21,7 +28,12 @@ export default function App() {
   const [connected, setConnected] = useState(socket.connected);
   const [rejoining, setRejoining] = useState(() => Boolean(loadSession()) && !pathIsPreview());
   const [preview, setPreview] = useState(() => pathIsPreview());
+  const [theme, setTheme] = useState<ThemeMode>(() => resolveTheme());
   const rejoinedRef = useRef(false);
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     function syncPreviewFromUrl() {
@@ -98,6 +110,12 @@ export default function App() {
     setPreview(false);
   }
 
+  function toggleTheme() {
+    const next: ThemeMode = theme === 'dark' ? 'light' : 'dark';
+    saveTheme(next);
+    setTheme(next);
+  }
+
   let view: View = 'home';
   if (preview) view = 'preview';
   else if (room) {
@@ -107,6 +125,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <ThemeToggle theme={theme} onToggle={toggleTheme} />
       {!preview && !connected ? <div className="banner">Connecting to server…</div> : null}
       {!preview && connected && rejoining ? <div className="banner">Rejoining lobby…</div> : null}
       {view === 'preview' && <BoardPreviewScreen onBack={closePreview} />}
