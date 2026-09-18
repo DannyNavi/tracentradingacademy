@@ -19,6 +19,9 @@ function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } |
   if (space.kind === 'utility' && space.name === 'Cafeteria') {
     return { src: '/cafeteria.png', fit: 'cover' };
   }
+  if (space.kind === 'utility' && (space.id === 28 || space.name === 'Dorms')) {
+    return { src: '/dorms.png', fit: 'cover' };
+  }
   if (space.id === 3 || space.name === 'The Stump') {
     return { src: '/echo-stump.png', fit: 'cover' };
   }

@@ -30,7 +30,7 @@ export const DEFAULT_SPACES: BoardSpace[] = [
   { id: 25, kind: 'rail', name: 'Kyoto Transport', price: 200, rent: 25 },
   { id: 26, kind: 'property', name: 'Mountain Pass', price: 260, rent: 22, group: 'mountain', color: '#E8C547' },
   { id: 27, kind: 'property', name: 'Alpine Mile', price: 260, rent: 22, group: 'mountain', color: '#E8C547' },
-  { id: 28, kind: 'utility', name: 'Water Station', price: 150, rent: 0 },
+  { id: 28, kind: 'utility', name: 'Dorms', price: 150, rent: 0 },
   { id: 29, kind: 'property', name: 'Summit Trial', price: 280, rent: 24, group: 'mountain', color: '#E8C547' },
   { id: 30, kind: 'gotojail', name: 'New Condition Slacker' },
   { id: 31, kind: 'property', name: 'Grand Lawn', price: 300, rent: 26, group: 'grand', color: '#2E8B57' },
