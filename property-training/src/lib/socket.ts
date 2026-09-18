@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { getPlayerId } from './session';
-import type { GameContent, RoomState } from './types';
+import type { RoomState } from './types';
 
 type Ack = { ok: boolean; room?: RoomState; playerId?: string; error?: string };
 
