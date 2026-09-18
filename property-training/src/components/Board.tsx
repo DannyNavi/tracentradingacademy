@@ -16,6 +16,9 @@ function tokensOn(spaceId: number, players: PlayerPublic[]) {
 }
 
 function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } | null {
+  if (space.kind === 'jail' || space.name === 'Infirmary') {
+    return { src: '/infirmary.png', fit: 'cover' };
+  }
   if (space.kind === 'utility' && space.name === 'Cafeteria') {
     return { src: '/cafeteria.png', fit: 'cover' };
   }
@@ -34,6 +37,28 @@ function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } |
   return null;
 }
 
+function TokenStack({ players }: { players: PlayerPublic[] }) {
+  return (
+    <>
+      {players.map((p) => {
+        const chara = getCharacter(p.characterId);
+        return chara ? (
+          <img
+            key={p.id}
+            className="token-chara"
+            src={chara.image}
+            alt={p.name}
+            title={`${p.name} · ${chara.name}`}
+            style={{ borderColor: p.color }}
+          />
+        ) : (
+          <span key={p.id} className="token" style={{ background: p.color }} title={p.name} />
+        );
+      })}
+    </>
+  );
+}
+
 function BoardCell({
   space,
   players,
@@ -48,20 +73,29 @@ function BoardCell({
   const owner = players.find((p) => p.id === ownerId);
   const art = cellArt(space);
   const hasArt = Boolean(art);
+  const isJail = space.kind === 'jail';
+  const inInfirmary = isJail ? here.filter((p) => p.inJail) : [];
+  const justVisiting = isJail ? here.filter((p) => !p.inJail) : [];
 
   return (
     <div
-      className={`cell kind-${space.kind}${hasArt ? ` cell-has-art cell-art-${art!.fit}` : ''}`}
+      className={`cell kind-${space.kind}${hasArt ? ` cell-has-art cell-art-${art!.fit}` : ''}${
+        isJail ? ' cell-infirmary' : ''
+      }`}
       style={{ ['--group' as string]: space.color || 'transparent' }}
       title={
         space.price
           ? `${space.name} · ${space.price} carats`
-          : space.name
+          : isJail
+            ? 'Infirmary · Just Visiting'
+            : space.name
       }
     >
       {art ? (
         <img
-          className={`cell-art cell-art--${art.fit}${space.name === 'The Stump' ? ' cell-art--stump' : ''}`}
+          className={`cell-art cell-art--${art.fit}${space.name === 'The Stump' ? ' cell-art--stump' : ''}${
+            isJail ? ' cell-art--infirmary' : ''
+          }`}
           src={art.src}
           alt=""
           draggable={false}
@@ -82,37 +116,42 @@ function BoardCell({
           draggable={false}
         />
       ) : null}
-      {space.kind !== 'gotojail' ? (
-        <div className={`cell-name${hasArt ? ' cell-name-on-art' : ''}`}>{space.name}</div>
-      ) : null}
-      {space.kind === 'go' ? (
-        <div className="cell-price">
-          <Carats amount={200} signed />
-        </div>
-      ) : null}
-      {space.price ? (
-        <div className={`cell-price${hasArt ? ' cell-price-on-art' : ''}`}>
-          <Carats amount={space.price} />
-        </div>
-      ) : null}
-      {owner ? <div className="cell-owner" style={{ background: owner.color }} /> : null}
-      <div className="cell-tokens">
-        {here.map((p) => {
-          const chara = getCharacter(p.characterId);
-          return chara ? (
-            <img
-              key={p.id}
-              className="token-chara"
-              src={chara.image}
-              alt={p.name}
-              title={`${p.name} · ${chara.name}`}
-              style={{ borderColor: p.color }}
-            />
-          ) : (
-            <span key={p.id} className="token" style={{ background: p.color }} title={p.name} />
-          );
-        })}
-      </div>
+      {isJail ? (
+        <>
+          <div className="infirmary-in">
+            <div className="cell-name cell-name-on-art">Infirmary</div>
+            <div className="cell-tokens cell-tokens-infirmary">
+              <TokenStack players={inInfirmary} />
+            </div>
+          </div>
+          <div className="infirmary-visit">
+            <span className="infirmary-visit-label">Just Visiting</span>
+            <div className="cell-tokens cell-tokens-visit">
+              <TokenStack players={justVisiting} />
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {space.kind !== 'gotojail' ? (
+            <div className={`cell-name${hasArt ? ' cell-name-on-art' : ''}`}>{space.name}</div>
+          ) : null}
+          {space.kind === 'go' ? (
+            <div className="cell-price">
+              <Carats amount={200} signed />
+            </div>
+          ) : null}
+          {space.price ? (
+            <div className={`cell-price${hasArt ? ' cell-price-on-art' : ''}`}>
+              <Carats amount={space.price} />
+            </div>
+          ) : null}
+          {owner ? <div className="cell-owner" style={{ background: owner.color }} /> : null}
+          <div className="cell-tokens">
+            <TokenStack players={here} />
+          </div>
+        </>
+      )}
     </div>
   );
 }
