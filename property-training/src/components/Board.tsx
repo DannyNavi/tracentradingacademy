@@ -150,6 +150,11 @@ function BoardCell({
               <Carats amount={200} signed />
             </div>
           ) : null}
+          {space.kind === 'tax' && space.taxAmount ? (
+            <div className="cell-price">
+              <Carats amount={-space.taxAmount} />
+            </div>
+          ) : null}
           {space.price ? (
             <div className={`cell-price${hasArt ? ' cell-price-on-art' : ''}`}>
               <Carats amount={space.price} />
