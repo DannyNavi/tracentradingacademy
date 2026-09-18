@@ -978,50 +978,6 @@ select:focus {
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
 }
 
-.cell-has-cafeteria {
-  background: #2a2420;
-  padding: 0;
-}
-
-.cell-cafeteria {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.cell-has-cafeteria .cell-name,
-.cell-has-cafeteria .cell-price,
-.cell-has-cafeteria .cell-tokens,
-.cell-has-cafeteria .cell-owner {
-  position: relative;
-  z-index: 1;
-}
-
-.cell-name-on-art {
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent);
-  margin: 0;
-  padding: 3px 2px 6px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.cell-price-on-art {
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
-  padding: 0 3px 2px;
-}
-
-.cell-price-on-art .carats {
-  color: #ffe08a;
-}
-
 .kind-gotojail .cell-name {
   text-align: center;
   -webkit-line-clamp: 2;
@@ -1066,11 +1022,12 @@ select:focus {
   background: #fff;
 }
 
-.cell-cafeteria {
-  background: #c9b79a;
+.cell-has-cafeteria {
+  background: #2a2420;
+  padding: 0;
 }
 
-.cell-cafeteria-bg {
+.cell-cafeteria {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -1081,23 +1038,32 @@ select:focus {
   z-index: 0;
 }
 
-.cell-cafeteria .cell-stripe,
-.cell-cafeteria .cell-name,
-.cell-cafeteria .cell-price,
-.cell-cafeteria .cell-owner,
-.cell-cafeteria .cell-tokens {
+.cell-has-cafeteria .cell-name,
+.cell-has-cafeteria .cell-price,
+.cell-has-cafeteria .cell-tokens,
+.cell-has-cafeteria .cell-owner {
   position: relative;
   z-index: 1;
 }
 
-.cell-cafeteria .cell-name,
-.cell-cafeteria .cell-price {
+.cell-name-on-art {
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent);
+  margin: 0;
+  padding: 3px 2px 6px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.cell-cafeteria .cell-price .carats {
+.cell-price-on-art {
   color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  padding: 0 3px 2px;
+}
+
+.cell-price-on-art .carats {
+  color: #ffe08a;
 }
 
 @media (max-width: 900px) {
