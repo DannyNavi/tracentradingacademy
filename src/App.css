@@ -481,9 +481,12 @@ select:focus {
 
 .character-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
-  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 0.55rem;
   margin-top: 0.85rem;
+  max-height: min(52vh, 560px);
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
 .character-card {

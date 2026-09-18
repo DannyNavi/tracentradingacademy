@@ -83,7 +83,7 @@ export function LobbyScreen({ room, selfId }: Props) {
 
       <section className="character-select">
         <h2>Pick your trainee</h2>
-        <p className="muted">Signature racewear icons — each character can only be chosen once.</p>
+        <p className="muted">Umamusume racewear icons — each can only be chosen once.</p>
         <div className="character-grid">
           {UMA_CHARACTERS.map((c) => {
             const taken = takenIds.has(c.id);
