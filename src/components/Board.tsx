@@ -15,8 +15,10 @@ function tokensOn(spaceId: number, players: PlayerPublic[]) {
   return players.filter((p) => !p.bankrupt && p.position === spaceId);
 }
 
-function isCafeteria(space: BoardSpace) {
-  return space.kind === 'utility' && space.name === 'Cafeteria';
+function cellArt(space: BoardSpace): string | null {
+  if (space.kind === 'utility' && space.name === 'Cafeteria') return '/cafeteria.png';
+  if (space.id === 39 || space.name === 'Hot Spring Getaway') return '/hot-spring-getaway.png';
+  return null;
 }
 
 function BoardCell({
@@ -31,11 +33,12 @@ function BoardCell({
   const here = tokensOn(space.id, players);
   const ownerId = ownership[space.id];
   const owner = players.find((p) => p.id === ownerId);
-  const cafeteria = isCafeteria(space);
+  const art = cellArt(space);
+  const hasArt = Boolean(art);
 
   return (
     <div
-      className={`cell kind-${space.kind}${cafeteria ? ' cell-has-cafeteria' : ''}`}
+      className={`cell kind-${space.kind}${hasArt ? ' cell-has-art' : ''}`}
       style={{ ['--group' as string]: space.color || 'transparent' }}
       title={
         space.price
@@ -43,16 +46,8 @@ function BoardCell({
           : space.name
       }
     >
-      {cafeteria ? (
-        <img
-          className="cell-cafeteria"
-          src="/cafeteria.png"
-          alt=""
-          draggable={false}
-        />
-      ) : null}
-      {(space.kind === 'property' || space.kind === 'rail' || space.kind === 'utility') &&
-      !cafeteria ? (
+      {art ? <img className="cell-art" src={art} alt="" draggable={false} /> : null}
+      {(space.kind === 'property' || space.kind === 'rail' || space.kind === 'utility') && !hasArt ? (
         <div className="cell-stripe" />
       ) : null}
       {space.kind === 'chance' ? (
@@ -67,10 +62,10 @@ function BoardCell({
         />
       ) : null}
       {space.kind !== 'gotojail' ? (
-        <div className={`cell-name${cafeteria ? ' cell-name-on-art' : ''}`}>{space.name}</div>
+        <div className={`cell-name${hasArt ? ' cell-name-on-art' : ''}`}>{space.name}</div>
       ) : null}
       {space.price ? (
-        <div className={`cell-price${cafeteria ? ' cell-price-on-art' : ''}`}>
+        <div className={`cell-price${hasArt ? ' cell-price-on-art' : ''}`}>
           <Carats amount={space.price} />
         </div>
       ) : null}
