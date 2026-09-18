@@ -1,7 +1,11 @@
+import { useEffect, useRef, useState } from 'react';
 import type { BoardSpace, PlayerPublic, RoomState } from '../lib/types';
 import { getCharacter } from '../lib/characters';
+import { TOKEN_MOVE_DURATION_MS } from '../lib/animTiming';
 import { Carats } from './Carats';
 import { DiceRoll } from './DiceRoll';
+
+const BOARD_SIZE = 40;
 
 type Props = {
   room: RoomState;
@@ -11,12 +15,32 @@ type Props = {
   preview?: boolean;
 };
 
+type PlayerSnapshot = Pick<PlayerPublic, 'position' | 'inJail' | 'bankrupt'>;
+
 function tokensOn(spaceId: number, players: PlayerPublic[]) {
   return players.filter((p) => !p.bankrupt && p.position === spaceId);
 }
 
 function isCafeteria(space: BoardSpace) {
   return space.kind === 'utility' && space.name === 'Cafeteria';
+}
+
+/** Clockwise steps from `from` to `to` (exclusive of from, inclusive of to). */
+function forwardPath(from: number, to: number): number[] {
+  if (from === to) return [];
+  const path: number[] = [];
+  let cur = from;
+  do {
+    cur = (cur + 1) % BOARD_SIZE;
+    path.push(cur);
+  } while (cur !== to);
+  return path;
+}
+
+function isJailSend(prev: PlayerSnapshot | undefined, next: PlayerPublic): boolean {
+  if (!next.inJail || next.position !== 10) return false;
+  if (!prev) return true;
+  return !prev.inJail || prev.position !== 10;
 }
 
 function BoardCell({
@@ -80,7 +104,7 @@ function BoardCell({
           const chara = getCharacter(p.characterId);
           return chara ? (
             <img
-              key={p.id}
+              key={`${p.id}@${space.id}`}
               className="token-chara"
               src={chara.image}
               alt={p.name}
@@ -88,12 +112,41 @@ function BoardCell({
               style={{ borderColor: p.color }}
             />
           ) : (
-            <span key={p.id} className="token" style={{ background: p.color }} title={p.name} />
+            <span
+              key={`${p.id}@${space.id}`}
+              className="token"
+              style={{ background: p.color }}
+              title={p.name}
+            />
           );
         })}
       </div>
     </div>
   );
+}
+
+function snapshotPlayers(players: PlayerPublic[]): Record<string, PlayerSnapshot> {
+  const out: Record<string, PlayerSnapshot> = {};
+  for (const p of players) {
+    out[p.id] = { position: p.position, inJail: p.inJail, bankrupt: p.bankrupt };
+  }
+  return out;
+}
+
+function positionsEqual(
+  a: Record<string, PlayerSnapshot>,
+  b: Record<string, PlayerSnapshot>,
+): boolean {
+  const ids = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const id of ids) {
+    const x = a[id];
+    const y = b[id];
+    if (!x || !y) return false;
+    if (x.position !== y.position || x.inJail !== y.inJail || x.bankrupt !== y.bankrupt) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -109,6 +162,118 @@ export function Board({ room, canRoll = false, onRoll, preview = false }: Props)
   const leftTopToBottom = [19, 18, 17, 16, 15, 14, 13, 12, 11];
   const topLeftToRight = [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
   const rightTopToBottom = [31, 32, 33, 34, 35, 36, 37, 38, 39];
+
+  const [visualPositions, setVisualPositions] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {};
+    for (const p of room.players) init[p.id] = p.position;
+    return init;
+  });
+
+  const visualRef = useRef(visualPositions);
+  const prevSnapRef = useRef<Record<string, PlayerSnapshot> | null>(null);
+  const timersRef = useRef<Record<string, number[]>>({});
+
+  useEffect(() => {
+    visualRef.current = visualPositions;
+  }, [visualPositions]);
+
+  useEffect(() => {
+    const timersByPlayer = timersRef.current;
+    return () => {
+      for (const timers of Object.values(timersByPlayer)) {
+        timers.forEach((t) => window.clearTimeout(t));
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const nextSnap = snapshotPlayers(room.players);
+
+    const clearTimers = (playerId: string) => {
+      const timers = timersRef.current[playerId];
+      if (timers) {
+        timers.forEach((t) => window.clearTimeout(t));
+        timersRef.current[playerId] = [];
+      }
+    };
+
+    const snapAll = () => {
+      const next: Record<string, number> = {};
+      for (const p of room.players) next[p.id] = p.position;
+      setVisualPositions(next);
+      for (const id of Object.keys(timersRef.current)) clearTimers(id);
+    };
+
+    if (preview) {
+      snapAll();
+      prevSnapRef.current = nextSnap;
+      return;
+    }
+
+    const prev = prevSnapRef.current;
+    if (!prev) {
+      snapAll();
+      prevSnapRef.current = nextSnap;
+      return;
+    }
+
+    if (positionsEqual(prev, nextSnap)) {
+      return;
+    }
+
+    for (const p of room.players) {
+      const old = prev[p.id];
+      if (!old) {
+        clearTimers(p.id);
+        setVisualPositions((v) => ({ ...v, [p.id]: p.position }));
+        continue;
+      }
+
+      if (old.position === p.position) continue;
+
+      clearTimers(p.id);
+
+      // Infirmary teleport (gotojail / triples / card): snap, don't walk the long way.
+      if (isJailSend(old, p)) {
+        setVisualPositions((v) => ({ ...v, [p.id]: p.position }));
+        continue;
+      }
+
+      const from = visualRef.current[p.id] ?? old.position;
+      const path = forwardPath(from, p.position);
+      if (path.length === 0) {
+        setVisualPositions((v) => ({ ...v, [p.id]: p.position }));
+        continue;
+      }
+
+      const stepMs = TOKEN_MOVE_DURATION_MS / path.length;
+      const timers: number[] = [];
+      path.forEach((tile, i) => {
+        timers.push(
+          window.setTimeout(() => {
+            setVisualPositions((v) => ({ ...v, [p.id]: tile }));
+          }, Math.round(stepMs * (i + 1))),
+        );
+      });
+      timersRef.current[p.id] = timers;
+    }
+
+    // Drop visuals for players who left
+    setVisualPositions((v) => {
+      const next = { ...v };
+      for (const id of Object.keys(next)) {
+        if (!nextSnap[id]) delete next[id];
+      }
+      return next;
+    });
+
+    prevSnapRef.current = nextSnap;
+  }, [room.players, preview]);
+
+  const visualPlayers: PlayerPublic[] = room.players.map((p) => ({
+    ...p,
+    position: visualPositions[p.id] ?? p.position,
+  }));
 
   return (
     <div className="board">
@@ -132,22 +297,22 @@ export function Board({ room, canRoll = false, onRoll, preview = false }: Props)
 
       <div className="edge bottom">
         {bottomLeftToRight.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} />
+          <BoardCell key={id} space={byId(id)} players={visualPlayers} ownership={room.ownership} />
         ))}
       </div>
       <div className="edge right">
         {rightTopToBottom.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} />
+          <BoardCell key={id} space={byId(id)} players={visualPlayers} ownership={room.ownership} />
         ))}
       </div>
       <div className="edge top">
         {topLeftToRight.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} />
+          <BoardCell key={id} space={byId(id)} players={visualPlayers} ownership={room.ownership} />
         ))}
       </div>
       <div className="edge left">
         {leftTopToBottom.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} />
+          <BoardCell key={id} space={byId(id)} players={visualPlayers} ownership={room.ownership} />
         ))}
       </div>
     </div>

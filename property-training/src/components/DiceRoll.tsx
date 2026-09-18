@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { DICE_ROLL_DURATION_MS } from '../lib/animTiming';
 
 const PIP_MAP: Record<number, number[]> = {
   1: [4],
@@ -60,7 +61,7 @@ export function DiceRoll({ dice, animKey }: Props) {
 
     const final = dice;
     const start = performance.now();
-    const duration = 950;
+    const duration = DICE_ROLL_DURATION_MS;
 
     const tick = () => {
       const elapsed = performance.now() - start;
