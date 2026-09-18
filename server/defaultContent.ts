@@ -2,7 +2,7 @@ import type { BoardSpace, GameCard, GameContent } from './types.js';
 
 /** Classic 40-space layout with horse-training themed defaults (fully editable by host). */
 export const DEFAULT_SPACES: BoardSpace[] = [
-  { id: 0, kind: 'go', name: 'Starting Gate' },
+  { id: 0, kind: 'go', name: 'Collect Race Earnings' },
   { id: 1, kind: 'property', name: 'Dirt Warmup Lane', price: 60, rent: 2, group: 'dirt-a', color: '#8B5A2B' },
   { id: 2, kind: 'community', name: 'Raffle Ticket' },
   { id: 3, kind: 'property', name: 'The Stump', price: 60, rent: 4, group: 'dirt-a', color: '#8B5A2B' },
@@ -45,7 +45,7 @@ export const DEFAULT_SPACES: BoardSpace[] = [
 ];
 
 export const DEFAULT_CHANCE: GameCard[] = [
-  { id: 'ch1', text: 'Advance to Starting Gate. Collect 200 carats.', effect: { type: 'move', position: 0 } },
+  { id: 'ch1', text: 'Advance to Collect Race Earnings (+200 carats).', effect: { type: 'move', position: 0 } },
   { id: 'ch2', text: 'Sprint to Hot Spring Getaway.', effect: { type: 'move', position: 39 } },
   { id: 'ch3', text: 'Take a recovery day in the Infirmary.', effect: { type: 'jail' } },
   { id: 'ch4', text: 'Sponsor bonus! Collect 150 carats.', effect: { type: 'money', amount: 150 } },
@@ -58,7 +58,7 @@ export const DEFAULT_CHANCE: GameCard[] = [
 ];
 
 export const DEFAULT_COMMUNITY: GameCard[] = [
-  { id: 'cm1', text: 'Advance to Starting Gate. Collect 200 carats.', effect: { type: 'move', position: 0 } },
+  { id: 'cm1', text: 'Advance to Collect Race Earnings (+200 carats).', effect: { type: 'move', position: 0 } },
   { id: 'cm2', text: 'Stable fund dividend: collect 100 carats.', effect: { type: 'money', amount: 100 } },
   { id: 'cm3', text: 'Doctor visit: pay 50 carats.', effect: { type: 'money', amount: -50 } },
   { id: 'cm4', text: 'Inheritance from a legendary trainer: 200 carats.', effect: { type: 'money', amount: 200 } },

@@ -91,7 +91,7 @@ function tryBankrupt(room: RoomState, player: PlayerPublic) {
 function collectGo(room: RoomState, player: PlayerPublic, from: number, to: number, forced = false) {
   if (forced || to < from) {
     player.money += GO_BONUS;
-    pushLog(room, `${player.name} passes Starting Gate (+${GO_BONUS} carats).`);
+    pushLog(room, `${player.name} collects race earnings (+${GO_BONUS} carats).`);
   }
 }
 
