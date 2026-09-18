@@ -39,14 +39,14 @@ export const DEFAULT_SPACES: BoardSpace[] = [
   { id: 34, kind: 'property', name: 'Clubhouse Gate', price: 320, rent: 28, group: 'grand', color: '#2E8B57' },
   { id: 35, kind: 'rail', name: 'Sapporo Transport', price: 200, rent: 25 },
   { id: 36, kind: 'chance', name: "Fuji's Hat" },
-  { id: 37, kind: 'property', name: 'Championship Mile', price: 350, rent: 35, group: 'champ', color: '#1F4E79' },
+  { id: 37, kind: 'property', name: 'Hot Spring Getaway', price: 350, rent: 35, group: 'champ', color: '#1F4E79' },
   { id: 38, kind: 'tax', name: 'Trainer License Tax', taxAmount: 100 },
-  { id: 39, kind: 'property', name: 'Hot Spring Getaway', price: 400, rent: 50, group: 'champ', color: '#1F4E79' },
+  { id: 39, kind: 'property', name: 'Mejiro Mansion', price: 400, rent: 50, group: 'champ', color: '#1F4E79' },
 ];
 
 export const DEFAULT_CHANCE: GameCard[] = [
   { id: 'ch1', text: 'Advance to Collect Race Earnings (+200 carats).', effect: { type: 'move', position: 0 } },
-  { id: 'ch2', text: 'Sprint to Hot Spring Getaway.', effect: { type: 'move', position: 39 } },
+  { id: 'ch2', text: 'Sprint to Mejiro Mansion.', effect: { type: 'move', position: 39 } },
   { id: 'ch3', text: 'Take a recovery day in the Infirmary.', effect: { type: 'jail' } },
   { id: 'ch4', text: 'Sponsor bonus! Collect 150 carats.', effect: { type: 'money', amount: 150 } },
   { id: 'ch5', text: 'Equipment upgrade costs 50 carats.', effect: { type: 'money', amount: -50 } },

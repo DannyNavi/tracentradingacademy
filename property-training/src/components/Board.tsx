@@ -25,8 +25,11 @@ function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } |
   if (space.id === 3 || space.name === 'The Stump') {
     return { src: '/echo-stump.png', fit: 'cover' };
   }
-  if (space.id === 39 || space.name === 'Hot Spring Getaway') {
+  if (space.id === 37 || space.name === 'Hot Spring Getaway') {
     return { src: '/hot-spring-getaway.png', fit: 'contain' };
+  }
+  if (space.id === 39 || space.name === 'Mejiro Mansion') {
+    return { src: '/mejiro-mansion.jpg', fit: 'cover' };
   }
   return null;
 }
