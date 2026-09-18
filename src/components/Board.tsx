@@ -85,6 +85,11 @@ function BoardCell({
       {space.kind !== 'gotojail' ? (
         <div className={`cell-name${hasArt ? ' cell-name-on-art' : ''}`}>{space.name}</div>
       ) : null}
+      {space.kind === 'go' ? (
+        <div className="cell-price">
+          <Carats amount={200} signed />
+        </div>
+      ) : null}
       {space.price ? (
         <div className={`cell-price${hasArt ? ' cell-price-on-art' : ''}`}>
           <Carats amount={space.price} />
