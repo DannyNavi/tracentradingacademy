@@ -1129,8 +1129,19 @@ select:focus {
 }
 
 .cell-has-art {
-  background: #2a2420;
   padding: 0;
+}
+
+.cell-art-cover {
+  background: #2a2420;
+}
+
+.cell-art-contain {
+  background: var(--kind-plain);
+}
+
+.cell-art-contain .cell-stripe {
+  display: none;
 }
 
 .cell-art {
@@ -1138,10 +1149,20 @@ select:focus {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
   object-position: center;
   pointer-events: none;
   z-index: 0;
+}
+
+.cell-art--cover {
+  object-fit: cover;
+}
+
+.cell-art--contain {
+  object-fit: contain;
+  padding: 10% 6% 18%;
+  box-sizing: border-box;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
 }
 
 .cell-has-art .cell-name,
