@@ -183,9 +183,7 @@ export function Board({ room, canRoll = false, onRoll, preview = false }: Props)
             dice={room.lastDice}
             animKey={room.lastDice ? `${room.log[0] ?? ''}:${room.lastDice.join('-')}` : ''}
           />
-        ) : (
-          <p className="muted board-preview-hint">Static map — no lobby needed</p>
-        )}
+        ) : null}
         {canRoll && onRoll ? (
           <button type="button" className="btn primary board-roll-btn" onClick={onRoll}>
             Roll dice

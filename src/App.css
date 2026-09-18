@@ -1183,10 +1183,6 @@ select:focus {
   margin: 0 auto;
 }
 
-.board-preview-hint {
-  margin: 0.5rem 0 0;
-  font-size: 0.85rem;
-}
 
 .kind-rail,
 .kind-utility {
