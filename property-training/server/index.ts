@@ -17,6 +17,10 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json());
 
+app.get('/health', (_req, res) => {
+  res.status(200).json({ ok: true });
+});
+
 const rooms = new RoomManager();
 
 function emitRoom(code: string) {
@@ -215,6 +219,6 @@ app.get(/.*/, (_req, res) => {
 });
 
 const PORT = Number(process.env.PORT) || 3001;
-httpServer.listen(PORT, () => {
-  console.log(`Tracen Trading Academy server on http://localhost:${PORT}`);
+httpServer.listen(PORT, '0.0.0.0', () => {
+  console.log(`Tracen Trading Academy server on http://0.0.0.0:${PORT}`);
 });
