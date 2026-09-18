@@ -45,14 +45,6 @@ export async function rejoinLobby(code: string, playerId: string) {
   return emit('lobby:rejoin', { code, playerId });
 }
 
-export async function updateContent(content: GameContent) {
-  return emit('content:update', content);
-}
-
-export async function openLobby() {
-  return emit('lobby:open');
-}
-
 export async function selectCharacter(characterId: string) {
   return emit('lobby:selectCharacter', { characterId });
 }

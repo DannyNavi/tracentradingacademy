@@ -259,7 +259,7 @@ export class RoomManager {
     const room: RoomState = {
       code: roomCode,
       hostId: playerId,
-      phase: 'config',
+      phase: 'lobby',
       content: defaultContent(),
       players: [host],
       turnIndex: 0,

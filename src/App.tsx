@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { ConfigScreen } from './screens/ConfigScreen';
 import { GameScreen } from './screens/GameScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
@@ -8,12 +7,11 @@ import { rejoinLobby, socket } from './lib/socket';
 import type { RoomState } from './lib/types';
 import './App.css';
 
-type View = 'home' | 'config' | 'lobby' | 'game';
+type View = 'home' | 'lobby' | 'game';
 
 export default function App() {
   const [room, setRoom] = useState<RoomState | null>(null);
   const [selfId, setSelfId] = useState(() => getPlayerId());
-  const [forceConfig, setForceConfig] = useState(false);
   const [connected, setConnected] = useState(socket.connected);
   const [rejoining, setRejoining] = useState(() => Boolean(loadSession()));
   const rejoinedRef = useRef(false);
@@ -33,7 +31,6 @@ export default function App() {
         if (!res.ok || !res.room) throw new Error(res.error || 'Rejoin failed');
         setSelfId(session.playerId);
         setRoom(res.room);
-        setForceConfig(res.room.phase === 'config');
         saveSession(res.room.code, session.playerId);
       } catch {
         clearSession();
@@ -53,8 +50,6 @@ export default function App() {
     };
     const onState = (next: RoomState) => {
       setRoom(next);
-      if (next.phase === 'lobby') setForceConfig(false);
-      if (next.phase === 'playing' || next.phase === 'finished') setForceConfig(false);
     };
 
     socket.on('connect', onConnect);
@@ -71,8 +66,7 @@ export default function App() {
 
   let view: View = 'home';
   if (room) {
-    if (forceConfig || room.phase === 'config') view = 'config';
-    else if (room.phase === 'lobby') view = 'lobby';
+    if (room.phase === 'lobby' || room.phase === 'config') view = 'lobby';
     else view = 'game';
   }
 
@@ -85,17 +79,11 @@ export default function App() {
           onJoined={(r, id) => {
             setRoom(r);
             setSelfId(id);
-            setForceConfig(r.phase === 'config');
             saveSession(r.code, id);
           }}
         />
       )}
-      {view === 'config' && room && (
-        <ConfigScreen room={room} selfId={selfId} onDone={() => setForceConfig(false)} />
-      )}
-      {view === 'lobby' && room && (
-        <LobbyScreen room={room} selfId={selfId} onEditBoard={() => setForceConfig(true)} />
-      )}
+      {view === 'lobby' && room && <LobbyScreen room={room} selfId={selfId} />}
       {view === 'game' && room && <GameScreen room={room} selfId={selfId} />}
     </div>
   );
