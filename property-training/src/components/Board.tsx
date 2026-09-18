@@ -22,6 +22,9 @@ function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } |
   if (space.kind === 'utility' && space.name === 'Cafeteria') {
     return { src: '/cafeteria.png', fit: 'cover' };
   }
+  if (space.kind === 'rail' && (space.id === 5 || space.name === 'Tracen Gym')) {
+    return { src: '/tracen-gym.jpg', fit: 'cover' };
+  }
   if (space.kind === 'utility' && (space.id === 28 || space.name === 'Dorms')) {
     return { src: '/dorms.png', fit: 'cover' };
   }
