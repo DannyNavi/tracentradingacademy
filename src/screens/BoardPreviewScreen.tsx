@@ -52,7 +52,6 @@ export function BoardPreviewScreen({ onBack }: Props) {
         <div>
           <p className="eyebrow">Map preview</p>
           <h1>Board layout</h1>
-          <p className="muted">Default circuit — no lobby required.</p>
         </div>
         <button type="button" className="btn ghost" onClick={onBack}>
           Back home

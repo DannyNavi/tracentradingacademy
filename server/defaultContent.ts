@@ -37,7 +37,7 @@ export const DEFAULT_SPACES: BoardSpace[] = [
   { id: 32, kind: 'property', name: 'Pavilion Row', price: 300, rent: 26, group: 'grand', color: '#2E8B57' },
   { id: 33, kind: 'community', name: 'Raffle Ticket' },
   { id: 34, kind: 'property', name: 'Clubhouse Gate', price: 320, rent: 28, group: 'grand', color: '#2E8B57' },
-  { id: 35, kind: 'rail', name: 'Sapporo Transport', price: 200, rent: 25 },
+  { id: 35, kind: 'rail', name: 'Tracen Pool', price: 200, rent: 25 },
   { id: 36, kind: 'chance', name: "Fuji's Hat" },
   { id: 37, kind: 'property', name: 'Hot Spring Getaway', price: 350, rent: 35, group: 'champ', color: '#1F4E79' },
   { id: 38, kind: 'tax', name: 'Trainer Fee', taxAmount: 100 },
