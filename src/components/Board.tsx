@@ -34,6 +34,9 @@ function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } |
   ) {
     return { src: '/tracen-main-building.jpg', fit: 'cover' };
   }
+  if (space.kind === 'rail' && (space.id === 35 || space.name === 'Tracen Pool')) {
+    return { src: '/tracen-pool.jpg', fit: 'cover' };
+  }
   if (space.kind === 'utility' && (space.id === 28 || space.name === 'Dorms')) {
     return { src: '/dorms.png', fit: 'cover' };
   }
