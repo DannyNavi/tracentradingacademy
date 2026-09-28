@@ -27,7 +27,7 @@ export const DEFAULT_SPACES: BoardSpace[] = [
   { id: 22, kind: 'chance', name: "Fuji's Hat" },
   { id: 23, kind: 'property', name: 'Floodlight Lane', price: 220, rent: 18, group: 'night', color: '#B33A3A' },
   { id: 24, kind: 'property', name: 'Midnight Derby', price: 240, rent: 20, group: 'night', color: '#B33A3A' },
-  { id: 25, kind: 'rail', name: 'Kyoto Transport', price: 200, rent: 25 },
+  { id: 25, kind: 'rail', name: 'Tracen Academy Main Building', price: 200, rent: 25 },
   { id: 26, kind: 'property', name: 'Mountain Pass', price: 260, rent: 22, group: 'mountain', color: '#E8C547' },
   { id: 27, kind: 'property', name: 'Alpine Mile', price: 260, rent: 22, group: 'mountain', color: '#E8C547' },
   { id: 28, kind: 'utility', name: 'Dorms', price: 150, rent: 0 },

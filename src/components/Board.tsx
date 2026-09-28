@@ -28,6 +28,12 @@ function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } |
   if (space.kind === 'rail' && (space.id === 15 || space.name === 'Tracen Classroom')) {
     return { src: '/tracen-classroom.jpg', fit: 'cover' };
   }
+  if (
+    space.kind === 'rail' &&
+    (space.id === 25 || space.name === 'Tracen Academy Main Building')
+  ) {
+    return { src: '/tracen-main-building.jpg', fit: 'cover' };
+  }
   if (space.kind === 'utility' && (space.id === 28 || space.name === 'Dorms')) {
     return { src: '/dorms.png', fit: 'cover' };
   }
