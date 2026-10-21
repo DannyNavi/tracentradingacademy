@@ -1,4 +1,6 @@
 import { AnimatedTokens } from './AnimatedTokens';
+import { useState } from 'react';
+import { TileDetails } from './TileDetails';
 import type { BoardSpace, PlayerPublic, RoomState } from '../lib/types';
 import { Carats } from './Carats';
 import { DiceRoll } from './DiceRoll';
@@ -56,10 +58,12 @@ function BoardCell({
   space,
   players,
   ownership,
+  onSelect,
 }: {
   space: BoardSpace;
   players: PlayerPublic[];
   ownership: Record<number, string>;
+  onSelect: (id: number) => void;
 }) {
 
   const ownerId = ownership[space.id];
@@ -68,10 +72,19 @@ function BoardCell({
   const hasArt = Boolean(art);
   const isJail = space.kind === 'jail';
 
-
-
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`View ${space.name} details`}
+      aria-haspopup="dialog"
+      onClick={() => onSelect(space.id)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect(space.id);
+        }
+      }}
       className={`cell kind-${space.kind}${hasArt ? ` cell-has-art cell-art-${art!.fit}` : ''}${
         isJail ? ' cell-infirmary' : ''
       }`}
@@ -153,7 +166,9 @@ function BoardCell({
  * CSS grids fill left→right / top→bottom.
  */
 export function Board({ room, canRoll = false, diceIdleMessage = 'Waiting for turn', onRoll, preview = false }: Props) {
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const spaces = room.content.properties;
+  const selectedSpace = spaces.find((space) => space.id === selectedId);
   const byId = (id: number) => spaces.find((s) => s.id === id)!;
 
   const bottomLeftToRight = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
@@ -163,6 +178,7 @@ export function Board({ room, canRoll = false, diceIdleMessage = 'Waiting for tu
 
   return (
     <div className="board">
+      {selectedSpace && <TileDetails room={room} space={selectedSpace} onClose={() => setSelectedId(null)} />}
       <AnimatedTokens players={room.players} rollId={room.lastRollId ?? 0} />
       <div className="board-center">
         <p className="brand-sm">Tracen Trading Academy</p>
@@ -183,22 +199,22 @@ export function Board({ room, canRoll = false, diceIdleMessage = 'Waiting for tu
 
       <div className="edge bottom">
         {bottomLeftToRight.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} />
+          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} onSelect={setSelectedId} />
         ))}
       </div>
       <div className="edge right">
         {rightTopToBottom.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} />
+          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} onSelect={setSelectedId} />
         ))}
       </div>
       <div className="edge top">
         {topLeftToRight.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} />
+          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} onSelect={setSelectedId} />
         ))}
       </div>
       <div className="edge left">
         {leftTopToBottom.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} />
+          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} onSelect={setSelectedId} />
         ))}
       </div>
     </div>

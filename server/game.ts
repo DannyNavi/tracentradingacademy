@@ -1,3 +1,4 @@
+import { calculateRent } from '../src/lib/rent.js';
 import { defaultContent } from './defaultContent.js';
 import type {
   BoardSpace,
@@ -36,25 +37,6 @@ function currentPlayer(room: RoomState): PlayerPublic {
 
 function spaceAt(room: RoomState, id: number): BoardSpace {
   return room.content.properties.find((s) => s.id === id)!;
-}
-
-function ownsGroup(room: RoomState, playerId: string, group: string): boolean {
-  const groupSpaces = room.content.properties.filter((s) => s.group === group);
-  return groupSpaces.every((s) => room.ownership[s.id] === playerId);
-}
-
-function railRent(room: RoomState, ownerId: string): number {
-  const owned = room.content.properties.filter(
-    (s) => s.kind === 'rail' && room.ownership[s.id] === ownerId,
-  ).length;
-  return [0, 25, 50, 100, 200][owned] ?? 200;
-}
-
-function utilityRent(room: RoomState, ownerId: string, diceTotal: number): number {
-  const owned = room.content.properties.filter(
-    (s) => s.kind === 'utility' && room.ownership[s.id] === ownerId,
-  ).length;
-  return diceTotal * (owned >= 2 ? 10 : 4);
 }
 
 function nextAliveIndex(room: RoomState, from: number): number {
@@ -222,10 +204,7 @@ function resolveLanding(room: RoomState, player: PlayerPublic, diceTotal: number
         room.canRoll = false;
       } else if (ownerId !== player.id) {
         const owner = room.players.find((p) => p.id === ownerId)!;
-        let amount = space.rent ?? 0;
-        if (space.kind === 'rail') amount = railRent(room, ownerId);
-        else if (space.kind === 'utility') amount = utilityRent(room, ownerId, diceTotal);
-        else if (space.group && ownsGroup(room, ownerId, space.group)) amount *= 2;
+        const amount = calculateRent(room, space, diceTotal);
         room.pending = { type: 'pay_rent', toPlayerId: owner.id, amount, spaceId: space.id };
         room.canRoll = false;
       } else {
@@ -521,7 +500,7 @@ export class RoomManager {
     const player = currentPlayer(room);
     const { card } = room.pending;
     applyCardEffect(room, player, card);
-    if (room.pending.type === 'none' && room.phase === 'playing' && !player.inJail) {
+    if ((room.pending as PendingAction).type === 'none' && room.phase === 'playing' && !player.inJail) {
       this.afterAction(room);
     }
     return room;

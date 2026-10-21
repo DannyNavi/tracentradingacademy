@@ -22,6 +22,10 @@ export function GameScreen({ room, selfId }: Props) {
   const me = room.players.find((p) => p.id === selfId);
   const current = room.players[room.turnIndex];
   const isMyTurn = current?.id === selfId;
+  const pendingSpaceId = 'spaceId' in room.pending ? room.pending.spaceId : null;
+  const pendingSpace = room.content.properties.find((space) => space.id === pendingSpaceId);
+  const rentOwnerId = room.pending.type === 'pay_rent' ? room.pending.toPlayerId : null;
+  const rentOwner = room.players.find((player) => player.id === rentOwnerId);
   const [error, setError] = useState('');
 
   async function run(fn: () => Promise<{ ok: boolean; error?: string }>) {
@@ -100,7 +104,7 @@ export function GameScreen({ room, selfId }: Props) {
           {isMyTurn && room.pending.type === 'buy_or_pass' && (
             <div className="action-stack">
               <p>
-                Acquire space #{room.pending.spaceId} for{' '}
+                Buy {pendingSpace?.name} for{' '}
                 <Carats amount={room.pending.price} />?
               </p>
               <button className="btn primary" onClick={() => void run(buyProperty)}>
@@ -115,10 +119,10 @@ export function GameScreen({ room, selfId }: Props) {
           {isMyTurn && room.pending.type === 'pay_rent' && (
             <div className="action-stack">
               <p>
-                Pay <Carats amount={room.pending.amount} /> rent
+                Pay <Carats amount={room.pending.amount} /> rent to {rentOwner?.name} for {pendingSpace?.name}.
               </p>
               <button className="btn primary" onClick={() => void run(payDue)}>
-                Pay
+                Pay rent
               </button>
             </div>
           )}
