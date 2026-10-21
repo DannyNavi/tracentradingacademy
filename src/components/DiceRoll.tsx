@@ -32,9 +32,10 @@ type Props = {
   dice: [number, number] | null;
   /** Stable roll ID; only a new roll should animate. */
   animKey: string;
+  idleMessage: string;
 };
 
-export function DiceRoll({ dice, animKey }: Props) {
+export function DiceRoll({ dice, animKey, idleMessage }: Props) {
   // Existing results are already settled when the board mounts or reconnects.
   const [animation, setAnimation] = useState({ key: animKey, rolling: false });
   if (animation.key !== animKey) {
@@ -51,7 +52,7 @@ export function DiceRoll({ dice, animKey }: Props) {
     }, 950);
     return () => window.clearTimeout(timer);
   }, [animKey, animation.rolling]);
-  if (!dice) return <p className="dice-readout muted">Roll when ready</p>;
+  if (!dice) return <p className="dice-readout muted" role="status">{idleMessage}</p>;
 
   return (
     <div className={`dice-stage ${rolling ? 'is-rolling' : 'is-settled'}`}>

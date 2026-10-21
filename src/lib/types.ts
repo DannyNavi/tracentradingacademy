@@ -42,6 +42,7 @@ export type GameContent = {
 };
 
 export type PlayerPublic = {
+  movements?: { id: number; path: number[] }[];
   id: string;
   name: string;
   color: string;

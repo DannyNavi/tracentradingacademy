@@ -1,19 +1,16 @@
+import { AnimatedTokens } from './AnimatedTokens';
 import type { BoardSpace, PlayerPublic, RoomState } from '../lib/types';
-import { getCharacter } from '../lib/characters';
 import { Carats } from './Carats';
 import { DiceRoll } from './DiceRoll';
 
 type Props = {
   room: RoomState;
   canRoll?: boolean;
+  diceIdleMessage?: string;
   onRoll?: () => void;
   /** Hide lobby code / roll UI for static map preview */
   preview?: boolean;
 };
-
-function tokensOn(spaceId: number, players: PlayerPublic[]) {
-  return players.filter((p) => !p.bankrupt && p.position === spaceId);
-}
 
 function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } | null {
   if (space.kind === 'jail' || space.name === 'Infirmary') {
@@ -55,28 +52,6 @@ function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } |
   return null;
 }
 
-function TokenStack({ players }: { players: PlayerPublic[] }) {
-  return (
-    <>
-      {players.map((p) => {
-        const chara = getCharacter(p.characterId);
-        return chara ? (
-          <img
-            key={p.id}
-            className="token-chara"
-            src={chara.image}
-            alt={p.name}
-            title={`${p.name} · ${chara.name}`}
-            style={{ borderColor: p.color }}
-          />
-        ) : (
-          <span key={p.id} className="token" style={{ background: p.color }} title={p.name} />
-        );
-      })}
-    </>
-  );
-}
-
 function BoardCell({
   space,
   players,
@@ -86,14 +61,14 @@ function BoardCell({
   players: PlayerPublic[];
   ownership: Record<number, string>;
 }) {
-  const here = tokensOn(space.id, players);
+
   const ownerId = ownership[space.id];
   const owner = players.find((p) => p.id === ownerId);
   const art = cellArt(space);
   const hasArt = Boolean(art);
   const isJail = space.kind === 'jail';
-  const inInfirmary = isJail ? here.filter((p) => p.inJail) : [];
-  const justVisiting = isJail ? here.filter((p) => !p.inJail) : [];
+
+
 
   return (
     <div
@@ -140,15 +115,9 @@ function BoardCell({
         <>
           <div className="infirmary-in">
             <div className="cell-name cell-name-on-art">Infirmary</div>
-            <div className="cell-tokens cell-tokens-infirmary">
-              <TokenStack players={inInfirmary} />
-            </div>
           </div>
           <div className="infirmary-visit">
             <span className="infirmary-visit-label">Just Visiting</span>
-            <div className="cell-tokens cell-tokens-visit">
-              <TokenStack players={justVisiting} />
-            </div>
           </div>
         </>
       ) : (
@@ -172,9 +141,6 @@ function BoardCell({
             </div>
           ) : null}
           {owner ? <div className="cell-owner" style={{ background: owner.color }} /> : null}
-          <div className="cell-tokens">
-            <TokenStack players={here} />
-          </div>
         </>
       )}
     </div>
@@ -186,7 +152,7 @@ function BoardCell({
  * bottom ← left ↑ top → right ↓ back to GO.
  * CSS grids fill left→right / top→bottom.
  */
-export function Board({ room, canRoll = false, onRoll, preview = false }: Props) {
+export function Board({ room, canRoll = false, diceIdleMessage = 'Waiting for turn', onRoll, preview = false }: Props) {
   const spaces = room.content.properties;
   const byId = (id: number) => spaces.find((s) => s.id === id)!;
 
@@ -197,12 +163,14 @@ export function Board({ room, canRoll = false, onRoll, preview = false }: Props)
 
   return (
     <div className="board">
+      <AnimatedTokens players={room.players} rollId={room.lastRollId ?? 0} />
       <div className="board-center">
         <p className="brand-sm">Tracen Trading Academy</p>
         <p className="board-center-sub">{preview ? 'Board preview' : `Lobby ${room.code}`}</p>
         {!preview ? (
           <DiceRoll
             dice={room.lastDice}
+            idleMessage={diceIdleMessage}
             animKey={room.lastDice ? `${room.code}:${room.lastRollId ?? 0}` : ''}
           />
         ) : null}

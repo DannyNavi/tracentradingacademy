@@ -95,20 +95,30 @@ function collectGo(room: RoomState, player: PlayerPublic, from: number, to: numb
   }
 }
 
+function recordMovement(player: PlayerPublic, steps: number) {
+  const path = Array.from({ length: Math.abs(steps) + 1 }, (_, i) =>
+    ((player.position + i * Math.sign(steps)) % 40 + 40) % 40);
+  const history = player.movements ?? [];
+  player.movements = [...history, { id: (history.at(-1)?.id ?? 0) + 1, path }].slice(-8);
+}
+
 function movePlayer(room: RoomState, player: PlayerPublic, to: number, grantGo = true) {
   const from = player.position;
+  recordMovement(player, ((to - from) % 40 + 40) % 40);
   player.position = ((to % 40) + 40) % 40;
   if (grantGo) collectGo(room, player, from, player.position);
 }
 
 function moveRelative(room: RoomState, player: PlayerPublic, steps: number) {
   const from = player.position;
+  recordMovement(player, steps);
   const to = from + steps;
   player.position = ((to % 40) + 40) % 40;
   if (steps > 0) collectGo(room, player, from, player.position);
 }
 
 function sendToJail(room: RoomState, player: PlayerPublic) {
+  recordMovement(player, (10 - player.position + 40) % 40);
   player.position = 10;
   player.inJail = true;
   player.jailTurns = 0;

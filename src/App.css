@@ -1315,3 +1315,22 @@ select:focus {
     --cell: clamp(42px, 8.2vw, 64px);
   }
 }
+
+.board-tokens {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.board-token {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+}
+
+.board-token .token-chara,
+.board-token .token {
+  animation: none;
+}

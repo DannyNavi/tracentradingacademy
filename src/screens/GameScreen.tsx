@@ -190,6 +190,7 @@ export function GameScreen({ room, selfId }: Props) {
         <Board
           room={room}
           canRoll={canRollOnBoard}
+          diceIdleMessage={isMyTurn ? 'Roll when ready' : current ? `${current.name}'s turn` : 'Waiting for turn'}
           onRoll={() => void run(rollDice)}
         />
       </div>
