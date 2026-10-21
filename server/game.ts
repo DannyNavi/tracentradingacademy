@@ -427,6 +427,7 @@ export class RoomManager {
     const d1 = 1 + Math.floor(Math.random() * 6);
     const d2 = 1 + Math.floor(Math.random() * 6);
     room.lastDice = [d1, d2];
+    room.lastRollId = (room.lastRollId ?? 0) + 1;
     const total = d1 + d2;
     const doubles = d1 === d2;
 
@@ -552,6 +553,7 @@ export class RoomManager {
     const d1 = 1 + Math.floor(Math.random() * 6);
     const d2 = 1 + Math.floor(Math.random() * 6);
     room.lastDice = [d1, d2];
+    room.lastRollId = (room.lastRollId ?? 0) + 1;
     if (d1 === d2) {
       player.inJail = false;
       player.jailTurns = 0;

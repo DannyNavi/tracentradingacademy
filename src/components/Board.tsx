@@ -203,7 +203,7 @@ export function Board({ room, canRoll = false, onRoll, preview = false }: Props)
         {!preview ? (
           <DiceRoll
             dice={room.lastDice}
-            animKey={room.lastDice ? `${room.log[0] ?? ''}:${room.lastDice.join('-')}` : ''}
+            animKey={room.lastDice ? `${room.code}:${room.lastRollId ?? 0}` : ''}
           />
         ) : null}
         {canRoll && onRoll ? (

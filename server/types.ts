@@ -78,6 +78,7 @@ export type RoomState = {
   turnIndex: number;
   ownership: Record<number, string>; // spaceId -> playerId
   lastDice: [number, number] | null;
+  lastRollId?: number;
   doublesCount: number;
   log: string[];
   pending: PendingAction;
