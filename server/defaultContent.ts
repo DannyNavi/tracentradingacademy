@@ -44,6 +44,23 @@ export const DEFAULT_SPACES: BoardSpace[] = [
   { id: 39, kind: 'property', name: 'Mejiro Mansion', price: 400, rent: 50, group: 'champ', color: '#1F4E79' },
 ];
 
+const DEVELOPMENT_RENTS: Record<number, number[]> = {
+  1: [10,30,90,160,250], 3: [20,60,180,320,450],
+  6: [30,90,270,400,550], 8: [30,90,270,400,550], 9: [40,100,300,450,600],
+  11: [50,150,450,625,750], 13: [50,150,450,625,750], 14: [60,180,500,700,900],
+  16: [70,200,550,750,950], 18: [70,200,550,750,950], 19: [80,220,600,800,1000],
+  21: [90,250,700,875,1050], 23: [90,250,700,875,1050], 24: [100,300,750,925,1100],
+  26: [110,330,800,975,1150], 27: [110,330,800,975,1150], 29: [120,360,850,1025,1200],
+  31: [130,390,900,1100,1275], 32: [130,390,900,1100,1275], 34: [150,450,1000,1200,1400],
+  37: [175,500,1100,1300,1500], 39: [200,600,1400,1700,2000],
+};
+for (const space of DEFAULT_SPACES) {
+  if (space.kind === 'property') {
+    space.buildingCost = (Math.floor(space.id / 10) + 1) * 50;
+    space.rentLevels = DEVELOPMENT_RENTS[space.id];
+  }
+}
+
 export const DEFAULT_CHANCE: GameCard[] = [
   { id: 'ch1', text: 'Advance to Collect Race Earnings (+200 carats).', effect: { type: 'move', position: 0 } },
   { id: 'ch2', text: 'Sprint to Mejiro Mansion.', effect: { type: 'move', position: 39 } },
@@ -51,9 +68,15 @@ export const DEFAULT_CHANCE: GameCard[] = [
   { id: 'ch4', text: 'Sponsor bonus! Collect 150 carats.', effect: { type: 'money', amount: 150 } },
   { id: 'ch5', text: 'Equipment upgrade costs 50 carats.', effect: { type: 'money', amount: -50 } },
   { id: 'ch6', text: 'Back up 3 spaces.', effect: { type: 'move_relative', steps: -3 } },
-  { id: 'ch7', text: 'Advance to nearest Transport hub.', effect: { type: 'nearest_rail' } },
+  { id: 'ch7', text: 'Advance to the nearest Transport hub. Pay double rent if owned.', effect: { type: 'nearest_rail' } },
   { id: 'ch8', text: 'Get out of Infirmary free. Keep until needed.', effect: { type: 'get_out_of_jail' } },
   { id: 'ch9', text: 'Fan meetup! Collect 100 carats.', effect: { type: 'money', amount: 100 } },
+  { id: 'ch11', text: 'Advance to the nearest utility. If owned, roll and pay 10 times the total.', effect: { type: 'nearest_utility' } },
+  { id: 'ch12', text: 'Team captain: pay each other trainer 50 carats.', effect: { type: 'pay_each', amount: 50 } },
+  { id: 'ch13', text: 'Facility repairs: pay 25 per house and 100 per hotel.', effect: { type: 'repairs', house: 25, hotel: 100 } },
+  { id: 'ch14', text: 'Advance to Oka Sho. Collect earnings if you pass GO.', effect: { type: 'move', position: 11 } },
+  { id: 'ch15', text: 'Advance to Kikuka Sho. Collect earnings if you pass GO.', effect: { type: 'move', position: 24 } },
+  { id: 'ch16', text: 'Training grant: collect 50 carats.', effect: { type: 'money', amount: 50 } },
   { id: 'ch10', text: 'Fine for false start: pay 30 carats.', effect: { type: 'money', amount: -30 } },
 ];
 
@@ -67,7 +90,13 @@ export const DEFAULT_COMMUNITY: GameCard[] = [
   { id: 'cm7', text: 'Get out of Infirmary free.', effect: { type: 'get_out_of_jail' } },
   { id: 'cm8', text: 'Sale of old tack: collect 45 carats.', effect: { type: 'money', amount: 45 } },
   { id: 'cm9', text: 'Income tax refund: collect 20 carats.', effect: { type: 'money', amount: 20 } },
-  { id: 'cm10', text: 'Birthday cake from the team: collect 10 carats from each vibe — take 50 carats.', effect: { type: 'money', amount: 50 } },
+  { id: 'cm11', text: 'Facility assessment: pay 40 per house and 115 per hotel.', effect: { type: 'repairs', house: 40, hotel: 115 } },
+  { id: 'cm12', text: 'Hospital fee: pay 100 carats.', effect: { type: 'money', amount: -100 } },
+  { id: 'cm13', text: 'Training tuition: pay 50 carats.', effect: { type: 'money', amount: -50 } },
+  { id: 'cm14', text: 'Consultancy fee: collect 25 carats.', effect: { type: 'money', amount: 25 } },
+  { id: 'cm15', text: 'Best racewear prize: collect 10 carats.', effect: { type: 'money', amount: 10 } },
+  { id: 'cm16', text: 'Bank adjustment in your favor: collect 200 carats.', effect: { type: 'money', amount: 200 } },
+  { id: 'cm10', text: 'Birthday celebration: collect 10 carats from each other trainer.', effect: { type: 'collect_each', amount: 10 } },
 ];
 
 export function defaultContent(): GameContent {

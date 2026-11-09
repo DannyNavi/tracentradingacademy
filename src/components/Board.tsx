@@ -7,6 +7,7 @@ import { DiceRoll } from './DiceRoll';
 
 type Props = {
   room: RoomState;
+  selfId?: string;
   canRoll?: boolean;
   diceIdleMessage?: string;
   onRoll?: () => void;
@@ -59,11 +60,15 @@ function BoardCell({
   players,
   ownership,
   onSelect,
+  development = 0,
+  mortgaged = false,
 }: {
   space: BoardSpace;
   players: PlayerPublic[];
   ownership: Record<number, string>;
   onSelect: (id: number) => void;
+  development?: number;
+  mortgaged?: boolean;
 }) {
 
   const ownerId = ownership[space.id];
@@ -99,6 +104,8 @@ function BoardCell({
               : space.name
       }
     >
+      {development > 0 && <span className="cell-development">{development === 5 ? 'Hotel' : '⌂'.repeat(development)}</span>}
+      {mortgaged && <span className="cell-mortgaged">Mortgaged</span>}
       {art ? (
         <img
           className={`cell-art cell-art--${art.fit}${space.name === 'The Stump' ? ' cell-art--stump' : ''}${
@@ -165,7 +172,7 @@ function BoardCell({
  * bottom ← left ↑ top → right ↓ back to GO.
  * CSS grids fill left→right / top→bottom.
  */
-export function Board({ room, canRoll = false, diceIdleMessage = 'Waiting for turn', onRoll, preview = false }: Props) {
+export function Board({ room, selfId, canRoll = false, diceIdleMessage = 'Waiting for turn', onRoll, preview = false }: Props) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const spaces = room.content.properties;
   const selectedSpace = spaces.find((space) => space.id === selectedId);
@@ -178,7 +185,7 @@ export function Board({ room, canRoll = false, diceIdleMessage = 'Waiting for tu
 
   return (
     <div className="board">
-      {selectedSpace && <TileDetails room={room} space={selectedSpace} onClose={() => setSelectedId(null)} />}
+      {selectedSpace && <TileDetails room={room} selfId={selfId} space={selectedSpace} onClose={() => setSelectedId(null)} />}
       <AnimatedTokens players={room.players} rollId={room.lastRollId ?? 0} />
       <div className="board-center">
         <p className="brand-sm">Tracen Trading Academy</p>
@@ -199,22 +206,22 @@ export function Board({ room, canRoll = false, diceIdleMessage = 'Waiting for tu
 
       <div className="edge bottom">
         {bottomLeftToRight.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} onSelect={setSelectedId} />
+          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} development={room.buildings?.[id]} mortgaged={room.mortgaged?.[id]} onSelect={setSelectedId} />
         ))}
       </div>
       <div className="edge right">
         {rightTopToBottom.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} onSelect={setSelectedId} />
+          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} development={room.buildings?.[id]} mortgaged={room.mortgaged?.[id]} onSelect={setSelectedId} />
         ))}
       </div>
       <div className="edge top">
         {topLeftToRight.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} onSelect={setSelectedId} />
+          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} development={room.buildings?.[id]} mortgaged={room.mortgaged?.[id]} onSelect={setSelectedId} />
         ))}
       </div>
       <div className="edge left">
         {leftTopToBottom.map((id) => (
-          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} onSelect={setSelectedId} />
+          <BoardCell key={id} space={byId(id)} players={room.players} ownership={room.ownership} development={room.buildings?.[id]} mortgaged={room.mortgaged?.[id]} onSelect={setSelectedId} />
         ))}
       </div>
     </div>

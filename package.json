@@ -12,7 +12,8 @@
     "dev:server": "tsx watch server/index.ts",
     "build": "vite build",
     "start": "tsx server/index.ts",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "test": "node --import tsx --test server/*.test.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",

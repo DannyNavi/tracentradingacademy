@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Board } from '../components/Board';
 import { Carats } from '../components/Carats';
+import { TradingPanel } from '../components/TradingPanel';
+import { EconomyPanel } from '../components/EconomyPanel';
 import { getCharacter } from '../lib/characters';
 import {
   buyProperty,
@@ -43,6 +45,7 @@ export function GameScreen({ room, selfId }: Props) {
     : null;
 
   const canRollOnBoard =
+    !room.auction && !room.debts?.length &&
     room.phase === 'playing' &&
     isMyTurn &&
     room.pending.type === 'none' &&
@@ -90,12 +93,15 @@ export function GameScreen({ room, selfId }: Props) {
           })}
         </ul>
 
+        <TradingPanel room={room} selfId={selfId} />
+        <EconomyPanel room={room} selfId={selfId} />
+
         <div className="actions">
-          {room.phase === 'playing' &&
+          {room.phase === 'playing' && !room.auction && !room.debts?.length &&
             isMyTurn &&
             room.pending.type === 'none' &&
             !room.canRoll &&
-            !me?.inJail && (
+            (!me?.inJail || !room.canRoll) && (
               <button className="btn primary" onClick={() => void run(endTurn)}>
                 End turn
               </button>
@@ -111,7 +117,7 @@ export function GameScreen({ room, selfId }: Props) {
                 Buy
               </button>
               <button className="btn ghost" onClick={() => void run(passProperty)}>
-                Pass
+                Pass · start auction
               </button>
             </div>
           )}
@@ -193,6 +199,7 @@ export function GameScreen({ room, selfId }: Props) {
       <div className="board-wrap">
         <Board
           room={room}
+          selfId={selfId}
           canRoll={canRollOnBoard}
           diceIdleMessage={isMyTurn ? 'Roll when ready' : current ? `${current.name}'s turn` : 'Waiting for turn'}
           onRoll={() => void run(rollDice)}

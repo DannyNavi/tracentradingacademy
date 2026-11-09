@@ -2,6 +2,8 @@ import { useEffect, useId, useRef } from 'react';
 import type { BoardSpace, RoomState } from '../lib/types';
 import { calculateRent, rentTerms } from '../lib/rent';
 import { Carats } from './Carats';
+import { PropertyControls } from './PropertyControls';
+import { buildingLevel, buildingCost, mortgageValue, rentLevels } from '../../shared/rules';
 
 const SPECIAL_RULES = {
   go: 'Collect 200 carats when you pass or land here.',
@@ -13,8 +15,8 @@ const SPECIAL_RULES = {
   free: 'Take a break here. No payment is required.',
 };
 
-export function TileDetails({ room, space, onClose }: {
-  room: RoomState; space: BoardSpace; onClose: () => void;
+export function TileDetails({ room, space, onClose, selfId }: {
+  room: RoomState; space: BoardSpace; onClose: () => void; selfId?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -42,12 +44,17 @@ export function TileDetails({ room, space, onClose }: {
             <div><dt>Owner</dt><dd>{owner?.name ?? 'Unowned'}</dd></div>
             <div><dt>Purchase price</dt><dd><Carats amount={space.price ?? 0} /></dd></div>
             <div><dt>{owner ? 'Current rent' : 'Starting rent'}</dt><dd>
-              {space.kind === 'utility' ? `${terms.multiplier} × dice total` : <Carats amount={terms.fixed} />}
+              {room.mortgaged?.[space.id] ? '0 · mortgaged' : space.kind === 'utility' ? `${terms.multiplier} × dice total` : <Carats amount={terms.fixed} />}
             </dd></div>
           </dl>
+          <p>Mortgage value: <Carats amount={mortgageValue(space)} />. {room.mortgaged?.[space.id] ? 'This property is mortgaged and collects no rent.' : ''}</p>
           <p className="muted">{owner ? 'Other players pay the owner when they land here. The owner pays no rent.'
             : 'No rent is charged while unowned. The player who lands here can buy it.'}</p>
           {space.kind === 'property' && <>
+            <p>Building cost: <Carats amount={buildingCost(space)} /> per house or hotel upgrade.</p>
+            <ul className="tile-group" aria-label="Development rent rates">{rentLevels(space).map((rent, index) => <li className={buildingLevel(room, space.id) === index + 1 ? 'rent-active' : ''} key={index}>
+              <span>{index === 4 ? 'Hotel' : `${index + 1} house${index ? 's' : ''}`}</span><Carats amount={rent} />
+            </li>)}</ul>
             <p>Base rent: <Carats amount={space.rent ?? 0} />. {terms.group.length > 0 && <>
               Own the complete group to double rent to <Carats amount={(space.rent ?? 0) * 2} />.
               {terms.completeGroup ? ' Complete group bonus is active.' : ''}</>}</p>
@@ -67,6 +74,7 @@ export function TileDetails({ room, space, onClose }: {
             {room.lastDice && <p className="muted">Using the last roll ({room.lastDice.join(' + ')}): <Carats amount={calculateRent(room, space, room.lastDice[0] + room.lastDice[1])} />{owner ? '.' : ' if purchased.'}</p>}
           </>}
           {due && <p className="tile-rent-due" role="status">{room.players[room.turnIndex]?.name} owes <Carats amount={due.amount} /> to {owner?.name}. Pay rent in the turn panel to continue.</p>}
+          <PropertyControls room={room} space={space} selfId={selfId} />
         </> : <>
           <p>{SPECIAL_RULES[space.kind as keyof typeof SPECIAL_RULES]}</p>
           {space.kind === 'tax' && <p>Fee: <Carats amount={space.taxAmount ?? 0} /></p>}

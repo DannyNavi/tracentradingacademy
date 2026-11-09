@@ -1,4 +1,9 @@
+import { drawFromDeck, initializeDecks, movePasses, returnCard } from './cards.js';
+import { auctionAction, charge, manageProperty, settleDebt, startPropertyAuction } from './economy.js';
+import type { PropertyAction } from '../shared/rules.js';
 import { calculateRent } from '../src/lib/rent.js';
+import { proposeTrade, respondToTrade } from './trading.js';
+import type { TradeProposal, TradeResponse } from '../shared/trades.js';
 import { defaultContent } from './defaultContent.js';
 import type {
   BoardSpace,
@@ -59,17 +64,6 @@ function checkWinner(room: RoomState) {
   }
 }
 
-function tryBankrupt(room: RoomState, player: PlayerPublic) {
-  if (player.money >= 0) return;
-  player.bankrupt = true;
-  player.money = 0;
-  for (const [spaceId, ownerId] of Object.entries(room.ownership)) {
-    if (ownerId === player.id) delete room.ownership[Number(spaceId)];
-  }
-  pushLog(room, `${player.name} is eliminated.`);
-  checkWinner(room);
-}
-
 function collectGo(room: RoomState, player: PlayerPublic, from: number, to: number, forced = false) {
   if (forced || to < from) {
     player.money += GO_BONUS;
@@ -105,6 +99,7 @@ function sendToJail(room: RoomState, player: PlayerPublic) {
   player.inJail = true;
   player.jailTurns = 0;
   room.doublesCount = 0;
+  room.extraRollEligible = false;
   room.canRoll = false;
   room.pending = { type: 'none' };
   pushLog(room, `${player.name} is sent to the Infirmary.`);
@@ -112,58 +107,64 @@ function sendToJail(room: RoomState, player: PlayerPublic) {
 
 function applyCardEffect(room: RoomState, player: PlayerPublic, card: GameCard) {
   const effect = card.effect;
+  room.pending = { type: 'none' };
+  pushLog(room, player.name + ': ' + card.text);
   switch (effect.type) {
     case 'money':
-      player.money += effect.amount;
-      pushLog(
-        room,
-        `${player.name}: ${card.text} (${effect.amount >= 0 ? '+' : ''}${effect.amount} carats)`,
-      );
-      tryBankrupt(room, player);
-      room.pending = { type: 'none' };
-      room.canRoll = false;
+      if (effect.amount >= 0) player.money += effect.amount;
+      else charge(room, player, -effect.amount, null, card.text);
       break;
     case 'move':
-      pushLog(room, `${player.name}: ${card.text}`);
       movePlayer(room, player, effect.position, true);
-      room.pending = { type: 'none' };
       resolveLanding(room, player, room.lastDice ? room.lastDice[0] + room.lastDice[1] : 0);
       break;
     case 'move_relative':
-      pushLog(room, `${player.name}: ${card.text}`);
       moveRelative(room, player, effect.steps);
-      room.pending = { type: 'none' };
       resolveLanding(room, player, room.lastDice ? room.lastDice[0] + room.lastDice[1] : 0);
       break;
-    case 'jail':
-      pushLog(room, `${player.name}: ${card.text}`);
-      sendToJail(room, player);
-      break;
+    case 'jail': sendToJail(room, player); break;
     case 'nearest_rail': {
-      pushLog(room, `${player.name}: ${card.text}`);
-      const rails = [5, 15, 25, 35];
-      const next = rails.find((r) => r > player.position) ?? rails[0];
+      const next = [5, 15, 25, 35].find((id) => id > player.position) ?? 5;
       movePlayer(room, player, next, true);
-      room.pending = { type: 'none' };
-      resolveLanding(room, player, room.lastDice ? room.lastDice[0] + room.lastDice[1] : 0);
+      resolveLanding(room, player, room.lastDice ? room.lastDice[0] + room.lastDice[1] : 0, 2);
       break;
     }
-    case 'get_out_of_jail':
-      player.getOutCards += 1;
-      pushLog(room, `${player.name}: ${card.text}`);
-      room.pending = { type: 'none' };
-      room.canRoll = false;
+    case 'nearest_utility': {
+      const next = [12, 28].find((id) => id > player.position) ?? 12;
+      movePlayer(room, player, next, true);
+      let dice: [number, number] = room.lastDice ?? [0, 0];
+      if (room.ownership[next] && room.ownership[next] !== player.id && !room.mortgaged?.[next]) {
+        dice = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
+        room.lastDice = dice; room.lastRollId = (room.lastRollId ?? 0) + 1;
+      }
+      resolveLanding(room, player, dice[0] + dice[1], 1, true);
       break;
+    }
+    case 'get_out_of_jail': player.getOutCards += 1; break;
+    case 'pay_each':
+      for (const other of activePlayers(room).filter((p) => p.id !== player.id)) charge(room, player, effect.amount, other.id, card.text);
+      break;
+    case 'collect_each':
+      for (const other of activePlayers(room).filter((p) => p.id !== player.id)) charge(room, other, effect.amount, player.id, card.text);
+      break;
+    case 'repairs': {
+      let amount = 0;
+      for (const [id, ownerId] of Object.entries(room.ownership)) {
+        if (ownerId !== player.id) continue;
+        const level = room.buildings?.[Number(id)] ?? 0;
+        amount += level === 5 ? effect.hotel : level * effect.house;
+      }
+      charge(room, player, amount, null, card.text);
+      break;
+    }
   }
 }
 
 function drawCard(room: RoomState, deck: 'chance' | 'community'): GameCard {
-  const cards = room.content[deck];
-  const card = cards[Math.floor(Math.random() * cards.length)];
-  return card;
+  return drawFromDeck(room, deck);
 }
 
-function resolveLanding(room: RoomState, player: PlayerPublic, diceTotal: number) {
+function resolveLanding(room: RoomState, player: PlayerPublic, diceTotal: number, rentMultiplier = 1, utilityOverride = false) {
   if (room.phase === 'finished') return;
   const space = spaceAt(room, player.position);
 
@@ -204,7 +205,8 @@ function resolveLanding(room: RoomState, player: PlayerPublic, diceTotal: number
         room.canRoll = false;
       } else if (ownerId !== player.id) {
         const owner = room.players.find((p) => p.id === ownerId)!;
-        const amount = calculateRent(room, space, diceTotal);
+        const amount = room.mortgaged?.[space.id] ? 0 : utilityOverride && space.kind === 'utility' ? diceTotal * 10 : calculateRent(room, space, diceTotal) * rentMultiplier;
+        if (!amount) { room.pending = { type: 'none' }; room.canRoll = false; break; }
         room.pending = { type: 'pay_rent', toPlayerId: owner.id, amount, spaceId: space.id };
         room.canRoll = false;
       } else {
@@ -275,7 +277,7 @@ export class RoomManager {
       return this.rejoinRoom(room.code, playerId, socketId);
     }
 
-    if (room.phase === 'playing' || room.phase === 'finished') {
+    if (room.phase === 'starting' || room.phase === 'playing' || room.phase === 'finished') {
       throw new Error('Game already started');
     }
     if (room.players.length >= 6) throw new Error('Lobby is full');
@@ -382,9 +384,16 @@ export class RoomManager {
     if (room.players.some((p) => !p.characterId)) {
       throw new Error('Every trainer must pick a character first');
     }
-    room.phase = 'playing';
+    if (room.phase !== 'lobby' && room.phase !== 'config') throw new Error('Game already started');
+    room.phase = 'starting';
+    room.buildings = {}; room.mortgaged = {}; room.debts = []; room.auction = null; room.auctionQueue = []; room.debtResume = undefined;
+    room.extraRollEligible = false; room.heldCards = {}; room.auctionResumeCanRoll = undefined;
+    initializeDecks(room);
+    room.startRolls = [];
+    room.startingRound = { number: 1, eligibleIds: room.players.map((p) => p.id), rolls: {} };
     room.turnIndex = 0;
     room.ownership = {};
+    room.trades = [];
     room.lastDice = null;
     room.doublesCount = 0;
     room.winnerId = null;
@@ -398,7 +407,37 @@ export class RoomManager {
       p.getOutCards = 0;
       p.bankrupt = false;
     }
-    pushLog(room, 'Race meeting started!');
+    room.canRoll = false;
+    pushLog(room, 'Each trainer must roll to decide who goes first.');
+    return room;
+  }
+
+  rollStartingDice(socketId: string, roundNumber: number): RoomState {
+    const { room, playerId } = this.requirePlayer(socketId);
+    const round = room.startingRound;
+    if (room.phase !== 'starting' || !round) throw new Error('Starting rolls have already finished.');
+    if (round.number !== roundNumber) throw new Error('This round has ended. Review the current starting round.');
+    if (!round.eligibleIds.includes(playerId)) throw new Error('Only players tied for the highest roll can reroll.');
+    if (round.rolls[playerId]) throw new Error('You have already rolled in this round.');
+    const dice: [number, number] = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)];
+    round.rolls[playerId] = dice;
+    room.startRolls ??= [];
+    room.startRolls.push({ playerId, dice, round: round.number });
+    const player = room.players.find((p) => p.id === playerId)!;
+    pushLog(room, player.name + ' rolled ' + dice.join('+') + '=' + (dice[0] + dice[1]) + ' for starting order (round ' + round.number + ').');
+    if (round.eligibleIds.every((id) => round.rolls[id])) {
+      const highest = Math.max(...round.eligibleIds.map((id) => round.rolls[id][0] + round.rolls[id][1]));
+      const leaders = round.eligibleIds.filter((id) => round.rolls[id][0] + round.rolls[id][1] === highest);
+      if (leaders.length > 1) {
+        room.startingRound = { number: round.number + 1, eligibleIds: leaders, rolls: {} };
+        pushLog(room, 'Tie at ' + highest + '! ' + leaders.map((id) => room.players.find((p) => p.id === id)!.name).join(' and ') + ' must reroll.');
+      } else {
+        room.turnIndex = room.players.findIndex((p) => p.id === leaders[0]);
+        room.phase = 'playing'; room.canRoll = true;
+        room.startingRound = undefined;
+        pushLog(room, currentPlayer(room).name + ' goes first with ' + highest + '. Roll to begin your turn.');
+      }
+    }
     return room;
   }
 
@@ -419,6 +458,7 @@ export class RoomManager {
     room.lastRollId = (room.lastRollId ?? 0) + 1;
     const total = d1 + d2;
     const doubles = d1 === d2;
+    room.extraRollEligible = doubles;
 
     if (doubles) room.doublesCount += 1;
     else room.doublesCount = 0;
@@ -463,42 +503,31 @@ export class RoomManager {
     const space = spaceAt(room, room.pending.spaceId);
     pushLog(room, `${player.name} passed on ${space.name}.`);
     room.pending = { type: 'none' };
-    this.afterAction(room);
+    startPropertyAuction(room, space.id);
     return room;
   }
 
   acknowledgePay(socketId: string): RoomState {
     const room = this.requireTurn(socketId);
     const player = currentPlayer(room);
-    if (room.pending.type === 'pay_rent') {
-      const { toPlayerId, amount, spaceId } = room.pending;
-      const owner = room.players.find((p) => p.id === toPlayerId)!;
-      player.money -= amount;
-      owner.money += amount;
-      const space = spaceAt(room, spaceId);
-      pushLog(room, `${player.name} paid ${amount} carats rent to ${owner.name} at ${space.name}.`);
-      tryBankrupt(room, player);
-      room.pending = { type: 'none' };
-      this.afterAction(room);
-      return room;
-    }
-    if (room.pending.type === 'pay_tax') {
-      const { amount } = room.pending;
-      player.money -= amount;
-      pushLog(room, `${player.name} paid ${amount} carats in fees.`);
-      tryBankrupt(room, player);
-      room.pending = { type: 'none' };
-      this.afterAction(room);
-      return room;
-    }
-    throw new Error('No payment pending');
+    const pending = room.pending;
+    if (pending.type !== 'pay_rent' && pending.type !== 'pay_tax') throw new Error('No payment pending');
+    room.pending = { type: 'none' };
+    charge(room, player, pending.amount, pending.type === 'pay_rent' ? pending.toPlayerId : null,
+      pending.type === 'pay_rent' ? 'rent at ' + spaceAt(room, pending.spaceId).name : 'tax');
+    if (room.pending.type === 'none') this.afterAction(room);
+    return room;
   }
 
   acknowledgeCard(socketId: string): RoomState {
     const room = this.requireTurn(socketId);
     if (room.pending.type !== 'card') throw new Error('No card pending');
     const player = currentPlayer(room);
-    const { card } = room.pending;
+    const { card, deck } = room.pending;
+    if (card.effect.type === 'get_out_of_jail') {
+      room.heldCards ??= {}; room.heldCards[player.id] ??= [];
+      room.heldCards[player.id].push({ deck, id: card.id });
+    } else returnCard(room, deck, card.id);
     applyCardEffect(room, player, card);
     if ((room.pending as PendingAction).type === 'none' && room.phase === 'playing' && !player.inJail) {
       this.afterAction(room);
@@ -507,6 +536,7 @@ export class RoomManager {
   }
 
   jailAction(socketId: string, action: 'pay' | 'card' | 'roll'): RoomState {
+    if (!['pay', 'card', 'roll'].includes(action)) throw new Error('Invalid Infirmary action.');
     const room = this.requireTurn(socketId);
     const player = currentPlayer(room);
     if (!player.inJail) throw new Error('Not in Infirmary');
@@ -518,18 +548,18 @@ export class RoomManager {
     if (room.pending.type !== 'jail_choice') throw new Error('No jail choice');
 
     if (action === 'pay') {
-      player.money -= JAIL_FINE;
-      player.inJail = false;
-      player.jailTurns = 0;
-      pushLog(room, `${player.name} paid ${JAIL_FINE} carats to leave Infirmary.`);
-      tryBankrupt(room, player);
       room.pending = { type: 'none' };
-      room.canRoll = true;
+      room.debtResume = { kind: 'jail_exit' };
+      if (charge(room, player, JAIL_FINE, null, 'leaving the Infirmary')) {
+        room.debtResume = undefined;
+        player.inJail = false; player.jailTurns = 0; room.canRoll = true;
+      }
       return room;
     }
 
     if (action === 'card') {
       if (player.getOutCards < 1) throw new Error('No free pass');
+      movePasses(room, player.id, null, 1);
       player.getOutCards -= 1;
       player.inJail = false;
       player.jailTurns = 0;
@@ -543,6 +573,7 @@ export class RoomManager {
     const d2 = 1 + Math.floor(Math.random() * 6);
     room.lastDice = [d1, d2];
     room.lastRollId = (room.lastRollId ?? 0) + 1;
+    room.extraRollEligible = false;
     if (d1 === d2) {
       player.inJail = false;
       player.jailTurns = 0;
@@ -557,15 +588,10 @@ export class RoomManager {
     player.jailTurns += 1;
     pushLog(room, `${player.name} failed to roll doubles (${d1}+${d2}).`);
     if (player.jailTurns >= 3) {
-      player.money -= JAIL_FINE;
-      player.inJail = false;
-      player.jailTurns = 0;
-      pushLog(room, `${player.name} must pay ${JAIL_FINE} carats after 3 turns.`);
-      tryBankrupt(room, player);
       room.pending = { type: 'none' };
-      moveRelative(room, player, d1 + d2);
-      resolveLanding(room, player, d1 + d2);
-      if (room.pending.type === 'none') this.afterAction(room);
+      room.debtResume = { kind: 'jail_roll', steps: d1 + d2 };
+      charge(room, player, JAIL_FINE, null, 'mandatory Infirmary exit after three turns');
+      this.continueEconomy(room);
       return room;
     }
 
@@ -594,6 +620,11 @@ export class RoomManager {
     if (player) {
       player.connected = false;
       pushLog(room, `${player.name} disconnected.`);
+      const auction = room.auction;
+      if (auction && !player.bankrupt && auction.eligible.includes(player.id) && !auction.passed.includes(player.id) && auction.highBidderId !== player.id) {
+        auctionAction(room, player.id, auction.id, null);
+        if (!room.auction) this.continueEconomy(room);
+      }
     }
 
     if (room.players.every((p) => !p.connected)) {
@@ -604,6 +635,56 @@ export class RoomManager {
 
     return room;
   }
+
+  proposeTrade(socketId: string, input: TradeProposal): RoomState {
+    const { room, playerId } = this.requirePlayer(socketId); proposeTrade(room, playerId, input); return room;
+  }
+  respondToTrade(socketId: string, input: TradeResponse): RoomState {
+    const { room, playerId } = this.requirePlayer(socketId); respondToTrade(room, playerId, input); return room;
+  }
+  propertyAction(socketId: string, spaceId: number, action: PropertyAction): RoomState {
+    const { room, playerId } = this.requirePlayer(socketId);
+    manageProperty(room, playerId, spaceId, action);
+    return room;
+  }
+
+  auctionAction(socketId: string, auctionId: string, amount: number | null, targetId?: number): RoomState {
+    const { room, playerId } = this.requirePlayer(socketId);
+    auctionAction(room, playerId, auctionId, amount, targetId);
+    if (!room.auction) this.continueEconomy(room);
+    return room;
+  }
+
+  debtAction(socketId: string, debtId: string, bankrupt: boolean): RoomState {
+    const { room, playerId } = this.requirePlayer(socketId);
+    settleDebt(room, playerId, debtId, bankrupt);
+    this.continueEconomy(room);
+    return room;
+  }
+
+  private continueEconomy(room: RoomState) {
+    checkWinner(room);
+    if (room.phase === 'finished') { room.auction = null; room.auctionQueue = []; room.debts = []; return; }
+    if (room.debts?.length) { room.pending = { type: 'debt' }; return; }
+    if (room.pending.type === 'debt') room.pending = { type: 'none' };
+    if (room.auction) return;
+    if (room.auctionQueue?.length) { startPropertyAuction(room, room.auctionQueue.shift()!); return; }
+    const player = currentPlayer(room);
+    const resume = room.debtResume; room.debtResume = undefined;
+    if (player.bankrupt) { this.endTurn(room); return; }
+    if (resume?.kind === 'jail_exit') {
+      player.inJail = false; player.jailTurns = 0; room.canRoll = true; return;
+    }
+    if (resume?.kind === 'jail_roll') {
+      player.inJail = false; player.jailTurns = 0;
+      moveRelative(room, player, resume.steps);
+      resolveLanding(room, player, resume.steps);
+    }
+    if (room.auctionResumeCanRoll !== undefined) {
+      room.canRoll = room.auctionResumeCanRoll; room.auctionResumeCanRoll = undefined;
+    } else if (room.pending.type === 'none') this.afterAction(room);
+  }
+
 
   private bindSocket(socketId: string, roomCode: string, playerId: string) {
     this.socketBindings.set(socketId, { roomCode, playerId });
@@ -676,7 +757,7 @@ export class RoomManager {
   private afterAction(room: RoomState) {
     if (room.phase !== 'playing') return;
     const player = currentPlayer(room);
-    const doubles = room.lastDice && room.lastDice[0] === room.lastDice[1];
+    const doubles = room.extraRollEligible === true;
     if (doubles && !player.inJail && !player.bankrupt) {
       room.canRoll = true;
     } else {
@@ -687,6 +768,7 @@ export class RoomManager {
   private endTurn(room: RoomState) {
     if (room.phase !== 'playing') return;
     room.doublesCount = 0;
+    room.extraRollEligible = false;
     room.lastDice = null;
     room.turnIndex = nextAliveIndex(room, room.turnIndex);
     room.pending = { type: 'none' };
@@ -712,6 +794,7 @@ export class RoomManager {
   private requireTurn(socketId: string): RoomState {
     const { room, playerId } = this.requirePlayer(socketId);
     if (room.phase !== 'playing') throw new Error('Game not in progress');
+    if (room.auction || room.debts?.length) throw new Error('Resolve the auction or outstanding debt first.');
     if (currentPlayer(room).id !== playerId) throw new Error('Not your turn');
     if (currentPlayer(room).bankrupt) throw new Error('You are out');
     return room;

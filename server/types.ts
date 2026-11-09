@@ -1,9 +1,16 @@
+import type { Auction, Debt, DebtResume, Deck, HeldCard } from '../shared/rules.js';
+import type { Trade } from '../shared/trades.js';
+
 export type CardEffect =
   | { type: 'money'; amount: number }
   | { type: 'move'; position: number }
   | { type: 'move_relative'; steps: number }
   | { type: 'jail' }
   | { type: 'nearest_rail' }
+  | { type: 'nearest_utility' }
+  | { type: 'pay_each'; amount: number }
+  | { type: 'collect_each'; amount: number }
+  | { type: 'repairs'; house: number; hotel: number }
   | { type: 'get_out_of_jail' };
 
 export type GameCard = {
@@ -33,6 +40,9 @@ export type BoardSpace = {
   group?: string;
   color?: string;
   taxAmount?: number;
+  buildingCost?: number;
+  mortgageValue?: number;
+  rentLevels?: number[];
 };
 
 export type GameContent = {
@@ -59,6 +69,7 @@ export type PlayerPublic = {
 export type GamePhase =
   | 'lobby'
   | 'config'
+  | 'starting'
   | 'playing'
   | 'finished';
 
@@ -68,9 +79,23 @@ export type PendingAction =
   | { type: 'pay_rent'; toPlayerId: string; amount: number; spaceId: number }
   | { type: 'pay_tax'; amount: number }
   | { type: 'card'; deck: 'chance' | 'community'; card: GameCard }
-  | { type: 'jail_choice' };
+  | { type: 'jail_choice' }
+  | { type: 'debt' };
 
 export type RoomState = {
+  buildings?: Record<number, number>;
+  mortgaged?: Record<number, boolean>;
+  auction?: Auction | null;
+  auctionQueue?: number[];
+  auctionResumeCanRoll?: boolean;
+  debts?: Debt[];
+  debtResume?: DebtResume;
+  extraRollEligible?: boolean;
+  startingRound?: { number: number; eligibleIds: string[]; rolls: Record<string, [number, number]> };
+  startRolls?: { playerId: string; dice: [number, number]; round?: number }[];
+  cardDecks?: Record<Deck, string[]>;
+  heldCards?: Record<string, HeldCard[]>;
+  trades?: Trade[];
   code: string;
   hostId: string;
   phase: GamePhase;

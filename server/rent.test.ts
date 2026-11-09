@@ -65,14 +65,17 @@ test('unowned tiles offer purchase and owners do not pay themselves', () => {
   assert.equal(room.players[0].money, 1500);
 });
 
-test('unaffordable rent eliminates the payer and releases their property', () => {
+test('unaffordable rent offers debt recovery before bankruptcy transfers assets to the creditor', () => {
   const { manager, room, landOn } = setup();
   room.players[0].money = 1;
-  room.ownership[1] = 'bob';
+  room.ownership[39] = 'bob';
   room.ownership[3] = 'alice';
-  landOn(1);
+  landOn(39);
   manager.acknowledgePay('socket-a');
+  assert.equal(room.players[0].bankrupt, false);
+  assert.equal(room.pending.type, 'debt');
+  manager.debtAction('socket-a', room.debts![0].id, true);
   assert.equal(room.players[0].bankrupt, true);
-  assert.equal(room.ownership[3], undefined);
+  assert.equal(room.ownership[3], 'bob');
   assert.equal(room.winnerId, 'bob');
 });

@@ -1364,3 +1364,65 @@ select:focus {
 .tile-group li { display: flex; gap: 12px; justify-content: space-between; padding: 8px; border-radius: 6px; }
 .tile-group .rent-active, .tile-rent-due { background: var(--cell-fill); font-weight: 700; }
 .tile-rent-due { padding: 12px; border-radius: 8px; }
+
+.trading-entry { margin: 0 0 16px; }
+.trade-open { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.trade-count { background: var(--accent-soft); color: var(--accent-deep); border-radius: 20px; padding: 3px 9px; font-size: 0.75rem; }
+.trade-incoming { margin: 6px 0; color: var(--accent-deep); font-weight: 700; font-size: 0.85rem; }
+.trade-dialog { width: min(960px, calc(100vw - 24px)); }
+.trade-dialog .tile-details-body { border-top-color: var(--accent); }
+.trade-menu { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 24px; }
+.trade-offers { display: flex; flex-direction: column; gap: 10px; max-height: 65vh; overflow: auto; padding: 2px; }
+.trade-offer-link { text-align: left; display: grid; gap: 3px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.trade-offer-link.selected { border-color: var(--accent-deep); background: var(--accent-soft); }
+.trade-offer-link span { font-size: 0.8rem; text-transform: capitalize; }
+.trade-offer-link small { color: var(--muted); }
+.trade-content { min-width: 0; }
+.trade-content > h3, .trade-content form > h3 { margin-top: 0; }
+.trade-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
+.trade-side { min-width: 0; margin: 0; border: 1px solid var(--line); padding: 14px; border-radius: 12px; background: var(--surface); }
+.trade-side legend { font-weight: 800; padding: 0 6px; }
+.trade-side h3 { margin: 6px 0 12px; }
+.trade-side p { font-size: 0.85rem; margin-top: 0; }
+.trade-side input[type="number"] { width: 100%; box-sizing: border-box; }
+.trade-property-list { max-height: 210px; overflow: auto; }
+.trade-property-option { display: flex; flex-direction: row; align-items: center; gap: 8px; padding: 8px 0; font-size: 0.85rem; cursor: pointer; }
+.trade-property-option input[type="checkbox"] { width: 17px; height: 17px; flex-shrink: 0; margin: 0; accent-color: var(--accent-deep); }
+.trade-property-color { display: inline-block; width: 7px; min-height: 18px; border-radius: 3px; flex-shrink: 0; }
+.trade-assets { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.trade-assets li { display: flex; align-items: center; gap: 7px; }
+.trade-approvals { display: flex; gap: 16px; flex-wrap: wrap; background: var(--accent-soft); padding: 10px 14px; border-radius: 10px; font-weight: 700; }
+.trade-approvals p { margin: 0; }
+.trade-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+.trade-result { padding: 14px; border-radius: 10px; background: var(--accent-soft); font-weight: 700; }
+.trade-empty { padding: 20px 0; }
+@media (max-width: 700px) {
+  .trade-dialog .tile-details-body { padding: 16px; }
+  .trade-menu { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .trade-offers { max-height: 150px; }
+  .trade-columns { grid-template-columns: minmax(0, 1fr); }
+}
+
+.portfolio-button { width: 100%; margin-bottom: 12px; }
+.economy-notice { border: 1px solid var(--accent-deep); border-radius: 12px; padding: 14px; margin: 12px 0; background: var(--accent-soft); }
+.economy-notice h3 { margin-top: 0; }
+.economy-notice p { overflow-wrap: anywhere; }
+.property-controls { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 12px; }
+.property-controls .trade-buttons { margin-top: 8px; }
+.property-controls .btn { white-space: normal; }
+.starting-rolls { font-size: 0.85rem; margin-bottom: 16px; }
+.cell-development, .cell-mortgaged { position: absolute; z-index: 4; left: 2px; top: 2px; padding: 1px 3px; border-radius: 3px; font-size: 0.55rem; font-weight: 800; background: var(--accent-deep); color: white; pointer-events: none; }
+.cell-mortgaged { top: auto; bottom: 3px; background: var(--danger); }
+
+.starting-page { width: min(1050px, 100%); margin: 0 auto; padding: 32px 16px; box-sizing: border-box; }
+.starting-header { text-align: center; max-width: 680px; margin: 0 auto 28px; }
+.starting-header h1 { font-family: var(--font-display); margin: 12px 0; }
+.starting-players { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+.starting-player { display: grid; justify-items: center; align-content: start; padding: 24px 16px; background: var(--surface); border: 2px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); text-align: center; }
+.starting-player.is-you { border-color: var(--accent-deep); }
+.starting-player h2 { font-size: 1.15rem; margin: 12px 0; }
+.starting-player .dice-readout { font-size: 1.4rem; }
+.starting-character { width: 80px; height: 80px; object-fit: contain; }
+.starting-actions { display: grid; justify-items: center; text-align: center; gap: 12px; margin-top: 28px; }
+.starting-actions .btn { min-width: 240px; }
+.starting-history { margin-top: 24px; }

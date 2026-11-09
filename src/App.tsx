@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { GameScreen } from './screens/GameScreen';
+import { StartingRollScreen } from './screens/StartingRollScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { BoardPreviewScreen } from './screens/BoardPreviewScreen';
@@ -140,7 +141,7 @@ export default function App() {
         />
       )}
       {view === 'lobby' && room && <LobbyScreen room={room} selfId={selfId} />}
-      {view === 'game' && room && <GameScreen room={room} selfId={selfId} />}
+      {view === 'game' && room && (room.phase === 'starting' ? <StartingRollScreen room={room} selfId={selfId} /> : <GameScreen room={room} selfId={selfId} />)}
     </div>
   );
 }

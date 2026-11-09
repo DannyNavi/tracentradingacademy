@@ -1,6 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 import { getPlayerId } from './session';
 import type { RoomState } from './types';
+import type { TradeProposal, TradeResponse } from '../../shared/trades';
+import type { PropertyAction } from '../../shared/rules';
 
 type Ack = { ok: boolean; room?: RoomState; playerId?: string; error?: string };
 
@@ -53,6 +55,8 @@ export async function startGame() {
   return emit('game:start');
 }
 
+export const rollStartingDice = (round: number) => emit('game:startingRoll', { round });
+
 export async function rollDice() {
   return emit('game:roll');
 }
@@ -80,3 +84,15 @@ export async function jailAction(action: 'pay' | 'card' | 'roll') {
 export async function endTurn() {
   return emit('game:endTurn');
 }
+
+export function proposeTrade(input: TradeProposal) {
+  return emit('trade:propose', input);
+}
+
+export function respondToTrade(input: TradeResponse) {
+  return emit('trade:respond', input);
+}
+
+export const manageProperty = (spaceId: number, action: PropertyAction) => emit('property:manage', { spaceId, action });
+export const respondToAuction = (auctionId: string, amount: number | null, targetId?: number) => emit('auction:respond', { auctionId, amount, targetId });
+export const resolveDebt = (debtId: string, bankrupt = false) => emit('debt:resolve', { debtId, bankrupt });
