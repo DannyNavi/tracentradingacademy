@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { selectCharacter, startGame } from '../lib/socket';
+import { kickLobbyPlayer, leaveLobby, selectCharacter, startGame } from '../lib/socket';
 import { UMA_CHARACTERS, getCharacter } from '../lib/characters';
 import type { RoomState } from '../lib/types';
 
@@ -46,6 +46,19 @@ export function LobbyScreen({ room, selfId }: Props) {
     }
   }
 
+  async function handleMembershipAction(action: () => ReturnType<typeof leaveLobby>) {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await action();
+      if (!res.ok) throw new Error(res.error || 'Could not update the lobby.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="lobby-page">
       <div className="lobby-code-block">
@@ -75,6 +88,17 @@ export function LobbyScreen({ room, selfId }: Props) {
                     · {chara ? chara.name : 'picking…'}
                   </span>
                 </span>
+                {isHost && p.id !== selfId && (
+                  <button
+                    type="button"
+                    className="btn ghost lobby-kick"
+                    aria-label={`Kick ${p.name}`}
+                    disabled={busy}
+                    onClick={() => void handleMembershipAction(() => kickLobbyPlayer(p.id))}
+                  >
+                    Kick
+                  </button>
+                )}
               </li>
             );
           })}
@@ -121,6 +145,9 @@ export function LobbyScreen({ room, selfId }: Props) {
               : 'Pick a character while the host gets ready.'}
           </p>
         )}
+        <button type="button" className="btn ghost" disabled={busy} onClick={() => void handleMembershipAction(leaveLobby)}>
+          Leave lobby
+        </button>
       </div>
       {error ? <p className="error">{error}</p> : null}
     </div>

@@ -45,11 +45,26 @@ export default function App() {
   const [rejoining, setRejoining] = useState(() => Boolean(loadSession()) && !pathIsPreview());
   const [preview, setPreview] = useState(() => pathIsPreview());
   const [theme, setTheme] = useState<ThemeMode>(() => resolveTheme());
+  const [lobbyNotice, setLobbyNotice] = useState('');
   const rejoinedRef = useRef(false);
+  const activeRoomCode = useRef(loadSession()?.roomCode);
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    function onLobbyRemoved({ code, reason }: { code: string; reason: 'kicked' | 'left' }) {
+      if (activeRoomCode.current !== code) return;
+      activeRoomCode.current = undefined;
+      if (loadSession()?.roomCode === code) clearSession();
+      setRoom(null);
+      setRejoining(false);
+      setLobbyNotice(reason === 'kicked' ? 'The host removed you from the lobby.' : '');
+    }
+    socket.on('lobby:removed', onLobbyRemoved);
+    return () => { socket.off('lobby:removed', onLobbyRemoved); };
+  }, []);
 
   useEffect(() => {
     function syncPreviewFromUrl() {
@@ -77,16 +92,21 @@ export default function App() {
       }
       if (rejoinedRef.current) return;
       rejoinedRef.current = true;
+      activeRoomCode.current = session.roomCode;
       setRejoining(true);
       try {
         const res = await rejoinLobby(session.roomCode, session.playerId);
+        if (activeRoomCode.current !== session.roomCode) return;
         if (!res.ok || !res.room) throw new Error(res.error || 'Rejoin failed');
         setSelfId(session.playerId);
         setRoom(res.room);
         saveSession(res.room.code, session.playerId);
       } catch {
-        clearSession();
-        setRoom(null);
+        if (activeRoomCode.current === session.roomCode) {
+          activeRoomCode.current = undefined;
+          if (loadSession()?.roomCode === session.roomCode) clearSession();
+          setRoom(null);
+        }
       } finally {
         setRejoining(false);
       }
@@ -101,7 +121,7 @@ export default function App() {
       rejoinedRef.current = false;
     };
     const onState = (next: RoomState) => {
-      setRoom(next);
+      if (activeRoomCode.current === next.code) setRoom(next);
     };
 
     socket.on('connect', onConnect);
@@ -144,10 +164,13 @@ export default function App() {
       <ThemeToggle theme={theme} onToggle={toggleTheme} />
       {!preview && !connected ? <div className="banner">Connecting to server…</div> : null}
       {!preview && connected && rejoining ? <div className="banner">Rejoining lobby…</div> : null}
+      {view === 'home' && lobbyNotice && <div className="banner" role="status">{lobbyNotice}</div>}
       {view === 'preview' && <BoardPreviewScreen onBack={closePreview} />}
       {view === 'home' && !rejoining && (
         <HomeScreen
           onJoined={(r, id) => {
+            activeRoomCode.current = r.code;
+            setLobbyNotice('');
             setRoom(r);
             setSelfId(id);
             saveSession(r.code, id);

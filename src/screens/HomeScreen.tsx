@@ -75,31 +75,30 @@ export function HomeScreen({ onJoined, onPreviewBoard }: Props) {
           <button type="submit" className="btn primary" disabled={busy}>
             Create lobby
           </button>
-          {onPreviewBoard ? (
-            <button type="button" className="btn ghost" disabled={busy} onClick={onPreviewBoard}>
-              Preview board
+          <div className="join-row">
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              maxLength={6}
+              placeholder="ROOM CODE"
+              aria-label="Lobby code"
+            />
+            <button
+              type="button"
+              className="btn ghost"
+              disabled={busy || code.trim().length < 4}
+              onClick={() => void handleJoin()}
+            >
+              Join
             </button>
-          ) : null}
+          </div>
         </div>
 
-        <div className="join-row">
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            maxLength={6}
-            placeholder="ROOM CODE"
-            aria-label="Lobby code"
-          />
-          <button
-            type="button"
-            className="btn ghost"
-            disabled={busy || code.trim().length < 4}
-            onClick={() => void handleJoin()}
-          >
-            Join
+        {onPreviewBoard && (
+          <button type="button" className="btn ghost home-preview" disabled={busy} onClick={onPreviewBoard}>
+            Preview board
           </button>
-        </div>
-
+        )}
         {error ? <p className="error">{error}</p> : null}
       </form>
     </div>

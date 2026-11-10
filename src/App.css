@@ -318,7 +318,7 @@ button {
   box-shadow: var(--shadow-sm);
 }
 
-.home-panel {
+.home > .home-panel {
   position: relative;
   display: grid;
   gap: 1rem;
@@ -386,13 +386,18 @@ select:focus {
 
 .join-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 8.25rem) auto;
   gap: 0.5rem;
 }
 
 .home-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.home-preview {
+  justify-self: start;
 }
 
 .panel-page,
@@ -575,6 +580,10 @@ select:focus {
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 1.25rem;
+}
+
+.lobby-kick {
+  margin-inline-start: auto;
 }
 
 .character-select {

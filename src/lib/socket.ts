@@ -47,6 +47,9 @@ export async function rejoinLobby(code: string, playerId: string) {
   return emit('lobby:rejoin', { code, playerId });
 }
 
+export const kickLobbyPlayer = (playerId: string) => emit('lobby:kick', { playerId });
+export const leaveLobby = () => emit('lobby:leave');
+
 export async function selectCharacter(characterId: string) {
   return emit('lobby:selectCharacter', { characterId });
 }

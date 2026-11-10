@@ -261,6 +261,7 @@ export class RoomManager {
   socketBindings = new Map<string, SocketBinding>();
   private roomCleanupTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private hostTransferTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private kickedPlayers = new WeakMap<RoomState, Set<string>>();
 
   createRoom(playerId: string, socketId: string, hostName: string): RoomState {
     this.leaveCurrentRoom(socketId);
@@ -306,6 +307,7 @@ export class RoomManager {
   joinRoom(codeIn: string, playerId: string, socketId: string, name: string): RoomState {
     const room = this.rooms.get(codeIn.toUpperCase());
     if (!room) throw new Error('Lobby not found');
+    if (this.kickedPlayers.get(room)?.has(playerId)) throw new Error('The host removed you from this lobby.');
 
     const existing = room.players.find((p) => p.id === playerId);
     if (existing) {
@@ -322,7 +324,7 @@ export class RoomManager {
     const player: PlayerPublic = {
       id: playerId,
       name: name.slice(0, 16) || `Trainer ${room.players.length + 1}`,
-      color: PLAYER_COLORS[room.players.length % PLAYER_COLORS.length],
+      color: PLAYER_COLORS.find((color) => room.players.every((p) => p.color !== color))!,
       characterId: null,
       money: STARTING_MONEY,
       position: 0,
@@ -342,6 +344,7 @@ export class RoomManager {
   rejoinRoom(codeIn: string, playerId: string, socketId: string): RoomState {
     const room = this.rooms.get(codeIn.toUpperCase());
     if (!room) throw new Error('Lobby not found');
+    if (this.kickedPlayers.get(room)?.has(playerId)) throw new Error('The host removed you from this lobby.');
     const player = room.players.find((p) => p.id === playerId);
     if (!player) throw new Error('Session expired — join again');
 
@@ -371,6 +374,49 @@ export class RoomManager {
 
   getPlayerIdForSocket(socketId: string): string | undefined {
     return this.socketBindings.get(socketId)?.playerId;
+  }
+
+  kickLobbyPlayer(socketId: string, playerId: string): RoomState {
+    const { room, playerId: hostId } = this.requireLobby(socketId);
+    if (room.hostId !== hostId) throw new Error('Only the host can remove players.');
+    if (playerId === hostId) throw new Error('Use Leave lobby to leave your own lobby.');
+    const player = room.players.find((p) => p.id === playerId);
+    if (!player) throw new Error('That player is no longer in the lobby.');
+
+    const kicked = this.kickedPlayers.get(room) ?? new Set<string>();
+    kicked.add(playerId);
+    this.kickedPlayers.set(room, kicked);
+    this.removeLobbyPlayer(room, playerId);
+    pushLog(room, `${player.name} was removed by the host.`);
+    return room;
+  }
+
+  leaveLobby(socketId: string): { room: RoomState; playerId: string } {
+    const { room, playerId } = this.requireLobby(socketId);
+    const player = room.players.find((p) => p.id === playerId)!;
+    this.removeLobbyPlayer(room, playerId);
+    pushLog(room, `${player.name} left the lobby.`);
+    return { room, playerId };
+  }
+
+  private removeLobbyPlayer(room: RoomState, playerId: string) {
+    room.players = room.players.filter((p) => p.id !== playerId);
+    for (const [sid, binding] of this.socketBindings) {
+      if (binding.roomCode === room.code && binding.playerId === playerId) this.socketBindings.delete(sid);
+    }
+    if (!room.players.length) {
+      this.clearHostTransfer(room.code);
+      this.clearRoomCleanup(room.code);
+      this.rooms.delete(room.code);
+      return;
+    }
+    if (room.hostId === playerId) {
+      this.clearHostTransfer(room.code);
+      const nextHost = room.players.find((p) => p.connected) ?? room.players[0];
+      room.hostId = nextHost.id;
+      pushLog(room, `${nextHost.name} is now the host.`);
+    }
+    if (room.players.every((p) => !p.connected)) this.scheduleRoomCleanup(room.code);
   }
 
   updateContent(socketId: string, content: GameContent): RoomState {
@@ -864,6 +910,14 @@ export class RoomManager {
     const { room, playerId } = this.requirePlayer(socketId);
     if (room.hostId !== playerId) throw new Error('Only the host can do that');
     return room;
+  }
+
+  private requireLobby(socketId: string) {
+    const binding = this.requirePlayer(socketId);
+    if (binding.room.phase !== 'lobby' && binding.room.phase !== 'config') {
+      throw new Error('The lobby is closed because the game has started.');
+    }
+    return binding;
   }
 
   private requireTurn(socketId: string): RoomState {

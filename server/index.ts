@@ -47,6 +47,17 @@ function requirePlayerId(playerId: unknown): string {
   return playerId.trim().slice(0, 64);
 }
 
+function lobbyPlayerRoom(code: string, playerId: string) {
+  return `lobby:${code}:${playerId}`;
+}
+
+function notifyLobbyDeparture(code: string, playerId: string, reason: 'kicked' | 'left') {
+  const playerRoom = lobbyPlayerRoom(code, playerId);
+  const sockets = io.in(playerRoom);
+  sockets.emit('lobby:removed', { code, reason });
+  sockets.socketsLeave([code, playerRoom]);
+}
+
 io.on('connection', (socket) => {
   socket.on(
     'lobby:create',
@@ -54,7 +65,7 @@ io.on('connection', (socket) => {
       try {
         const id = requirePlayerId(playerId);
         const room = rooms.createRoom(id, socket.id, name || 'Host');
-        socket.join(room.code);
+        socket.join([room.code, lobbyPlayerRoom(room.code, id)]);
         ack?.({ ok: true, room: publicRoom(room), playerId: id });
         emitRoom(room.code);
       } catch (e) {
@@ -72,7 +83,7 @@ io.on('connection', (socket) => {
       try {
         const id = requirePlayerId(playerId);
         const room = rooms.joinRoom(code, id, socket.id, name || 'Trainer');
-        socket.join(room.code);
+        socket.join([room.code, lobbyPlayerRoom(room.code, id)]);
         ack?.({ ok: true, room: publicRoom(room), playerId: id });
         emitRoom(room.code);
       } catch (e) {
@@ -90,7 +101,7 @@ io.on('connection', (socket) => {
       try {
         const id = requirePlayerId(playerId);
         const room = rooms.rejoinRoom(code, id, socket.id);
-        socket.join(room.code);
+        socket.join([room.code, lobbyPlayerRoom(room.code, id)]);
         ack?.({ ok: true, room: publicRoom(room), playerId: id });
         emitRoom(room.code);
       } catch (e) {
@@ -103,6 +114,29 @@ io.on('connection', (socket) => {
     try {
       const room = rooms.updateContent(socket.id, content);
       ack?.({ ok: true, room: publicRoom(room) });
+      emitRoom(room.code);
+    } catch (e) {
+      ack?.({ ok: false, error: (e as Error).message });
+    }
+  });
+
+  socket.on('lobby:kick', (input: { playerId: string }, ack?: (r: unknown) => void) => {
+    try {
+      const playerId = requirePlayerId(input?.playerId);
+      const room = rooms.kickLobbyPlayer(socket.id, playerId);
+      notifyLobbyDeparture(room.code, playerId, 'kicked');
+      ack?.({ ok: true });
+      emitRoom(room.code);
+    } catch (e) {
+      ack?.({ ok: false, error: (e as Error).message });
+    }
+  });
+
+  socket.on('lobby:leave', (ack?: (r: unknown) => void) => {
+    try {
+      const { room, playerId } = rooms.leaveLobby(socket.id);
+      notifyLobbyDeparture(room.code, playerId, 'left');
+      ack?.({ ok: true });
       emitRoom(room.code);
     } catch (e) {
       ack?.({ ok: false, error: (e as Error).message });
