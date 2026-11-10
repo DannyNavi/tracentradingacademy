@@ -101,6 +101,12 @@ export function HomeScreen({ onJoined, onPreviewBoard }: Props) {
         )}
         {error ? <p className="error">{error}</p> : null}
       </form>
+
+      <section className="home-credits" aria-labelledby="home-credits-title">
+        <h2 id="home-credits-title">Special Thanks to:</h2>
+        <p><strong>Beta Testers:</strong> Bumkin, Stay Gold, Joe</p>
+        <p><strong>Writers:</strong> Eveline, Xeno, Charles Shawarma</p>
+      </section>
     </div>
   );
 }
