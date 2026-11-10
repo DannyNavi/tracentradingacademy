@@ -1,6 +1,6 @@
 import { drawFromDeck, initializeDecks, movePasses, returnCard } from './cards.js';
 import { auctionAction, charge, creditCarats, liquidatePlayer, manageProperty, settleDebt, startPropertyAuction } from './economy.js';
-import type { PropertyAction } from '../shared/rules.js';
+import { liquidationValue, type PropertyAction } from '../shared/rules.js';
 import { calculateRent } from '../src/lib/rent.js';
 import { proposeTrade, respondToTrade } from './trading.js';
 import type { TradeProposal, TradeResponse } from '../shared/trades.js';
@@ -753,8 +753,26 @@ export class RoomManager {
 
   declareBankruptcy(socketId: string): RoomState {
     const room = this.requireTurn(socketId);
-    if (room.pending.type !== 'none') throw new Error('Resolve the current action before declaring bankruptcy.');
-    liquidatePlayer(room, currentPlayer(room));
+    const player = currentPlayer(room);
+    const pending = room.pending;
+    let creditor: PlayerPublic | undefined;
+    if (pending.type === 'pay_rent') {
+      if (player.money >= pending.amount) {
+        charge(room, player, pending.amount, pending.toPlayerId, 'rent at ' + spaceAt(room, pending.spaceId).name);
+      } else {
+        if (liquidationValue(room, player.id) >= pending.amount) {
+          throw new Error('Your assets can cover this rent. Settle the rent before declaring bankruptcy.');
+        }
+        creditor = activePlayers(room).find((other) => other.id === pending.toPlayerId);
+      }
+    }
+    if (pending.type === 'card') returnCard(room, pending.deck, pending.card.id);
+    room.pending = { type: 'none' };
+    liquidatePlayer(room, player, creditor);
+    if (pending.type === 'buy_or_pass') {
+      room.auctionQueue ??= [];
+      room.auctionQueue.push(pending.spaceId);
+    }
     this.continueEconomy(room);
     return room;
   }

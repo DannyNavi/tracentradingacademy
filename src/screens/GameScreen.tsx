@@ -43,6 +43,7 @@ export function GameScreen({ room, selfId }: Props) {
   const winner = room.winnerId
     ? room.players.find((p) => p.id === room.winnerId)
     : null;
+  const winnerCharacter = getCharacter(winner?.characterId ?? null);
 
   const canRollOnBoard =
     !room.auction && !room.debts?.length &&
@@ -204,7 +205,13 @@ export function GameScreen({ room, selfId }: Props) {
           diceIdleMessage={choosingDie ? 'Choose a die face' : isMyTurn ? 'Roll when ready' : current ? `${current.name}'s turn` : 'Waiting for turn'}
           onRoll={() => void run(() => rollDice())}
           centerActions={
-            <>
+            room.phase === 'finished' && winner ? (
+              <section className="board-victory" role="status">
+                <p className="eyebrow">Victory</p>
+                {winnerCharacter && <img src={winnerCharacter.image} alt={winnerCharacter.name} />}
+                <h2>{winner.name} wins!</h2>
+              </section>
+            ) : <>
               {pendingCard && (
                 <section className="action-stack card-reveal board-event" key={pendingCard.card.id} aria-label="Event card">
                   {pendingCard.deck === 'chance' && <img className="fuji-card-art" src="/fuji-hat.png" alt="" />}

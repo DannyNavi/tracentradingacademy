@@ -199,7 +199,7 @@ export function Board({ room, selfId, canRoll = false, diceIdleMessage = 'Waitin
       <div className="board-center">
         <p className="brand-sm">Tracen Trading Academy</p>
         <p className="board-center-sub">{preview ? 'Board preview' : `Lobby ${room.code}`}</p>
-        {!preview ? (
+        {!preview && room.phase !== 'finished' ? (
           <DiceRoll
             dice={room.lastDice}
             idleMessage={diceIdleMessage}

@@ -26,12 +26,15 @@ function AuctionPanel({ room, selfId, auction }: { room: RoomState; selfId: stri
   return <section className="economy-notice" aria-label="Auction">
     <h3>{auction.kind === 'property' ? 'Property auction' : `Last ${auction.kind} auction`}</h3>
     <p>{auction.kind === 'property' ? room.content.properties.find((s) => s.id === auction.spaceId)?.name : `Bid for the bank’s final ${auction.kind}.`}</p>
-    <p>Highest bid: <Carats amount={auction.highBid} />{highBidder ? ` · ${highBidder.name}` : ' · No bids yet'}</p>
+    <dl className="auction-bids">
+      <dt>Highest bid</dt>
+      <dd><Carats amount={auction.highBid} />{highBidder ? ` · ${highBidder.name}` : ' · No bids yet'}</dd>
+      {participating && <><dt>Minimum bid</dt><dd><Carats amount={minimumBid} /></dd></>}
+    </dl>
     {participating ? <form onSubmit={(event) => { event.preventDefault(); void respond(bidAmount); }}>
       {auction.kind !== 'property' && <label>Build on<select value={target} onChange={(event) => setTarget(Number(event.target.value))}>
         {auction.buildTargets?.[selfId]?.map((id) => <option key={id} value={id}>{room.content.properties.find((s) => s.id === id)?.name}</option>)}
       </select></label>}
-      <p>Minimum bid: <Carats amount={minimumBid} /></p>
       <label>Your bid<input type="number" min={minimumBid} max={me?.money ?? 0} step={1} required value={bidInput} onChange={(event) => setBid(event.target.value)} /></label>
       <div className="trade-buttons"><button className="btn primary" disabled={busy || !Number.isSafeInteger(bidAmount) || bidAmount < minimumBid || bidAmount > (me?.money ?? 0)}>Place bid</button>
         <button className="btn ghost" type="button" disabled={busy || auction.highBidderId === selfId} onClick={() => void respond(null)}>Pass auction</button></div>
@@ -60,12 +63,12 @@ function Portfolio({ room, selfId, onClose }: { room: RoomState; selfId: string;
 export function EconomyPanel({ room, selfId }: { room: RoomState; selfId: string }) {
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const me = room.players.find((p) => p.id === selfId);
-  const canDeclare = room.phase === 'playing' && me && !me.bankrupt &&
-    room.players[room.turnIndex]?.id === selfId && room.pending.type === 'none' &&
-    !room.auction && !room.debts?.length;
+  const showDeclare = room.phase === 'playing' && me && !me.bankrupt &&
+    room.players[room.turnIndex]?.id === selfId &&
+    !room.debts?.some((debt) => debt.playerId === selfId);
 
   async function resign() {
-    if (!window.confirm('Declare bankruptcy and leave the game? The bank will auction your properties.')) return;
+    if (!window.confirm('Declare bankruptcy and leave the game? Any rent due is handled first. The bank will auction properties it receives.')) return;
     setBusy(true);
     setError('');
     try {
@@ -84,7 +87,7 @@ export function EconomyPanel({ room, selfId }: { room: RoomState; selfId: string
   }
   return <>
     {me && !me.bankrupt && <button className="btn ghost portfolio-button" aria-haspopup="dialog" onClick={() => setOpen(true)}>Manage properties</button>}
-    {canDeclare && <button className="btn danger portfolio-button" disabled={busy} onClick={() => void resign()}>Declare bankruptcy</button>}
+    {showDeclare && <button className="btn danger portfolio-button" disabled={busy || Boolean(room.auction || room.debts?.length)} onClick={() => void resign()}>Declare bankruptcy</button>}
     {open && <Portfolio room={room} selfId={selfId} onClose={() => setOpen(false)} />}
     {room.auction && <AuctionPanel key={room.auction.id} room={room} selfId={selfId} auction={room.auction} />}
     {(room.debts ?? []).map((debt) => <section className="economy-notice" key={debt.id} aria-label="Outstanding debt">

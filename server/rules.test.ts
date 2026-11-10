@@ -173,11 +173,10 @@ test('voluntary bankruptcy auctions all properties before naming the last player
 
   assert.throws(() => manager.declareBankruptcy('sb'), /Not your turn/);
   room.pending = { type: 'pay_tax', amount: 100 };
-  assert.throws(() => manager.declareBankruptcy('sa'), /Resolve the current action/);
-  manager.acknowledgePay('sa');
   manager.declareBankruptcy('sa');
 
   assert.equal(room.players[0].bankrupt, true);
+  assert.equal(room.pending.type, 'none');
   assert.equal(room.players[0].money, 0);
   assert.deepEqual(room.ownership, {});
   assert.deepEqual(room.buildings, {});
@@ -206,6 +205,35 @@ test('bankruptcy without connected bidders releases properties and advances the 
   assert.deepEqual(room.ownership, {});
   assert.equal(room.turnIndex, 1);
   assert.equal(room.canRoll, true);
+});
+
+test('declaring bankruptcy with rent pending preserves the creditor’s claim', () => {
+  const { manager, room, own } = setup();
+  const player = room.players[0];
+  own([1]);
+  own([3], 'b');
+  room.pending = { type: 'pay_rent', toPlayerId: 'b', amount: 100, spaceId: 3 };
+  player.money = 80;
+  assert.throws(() => manager.declareBankruptcy('sa'), /Settle the rent/);
+  assert.equal(player.bankrupt, false);
+  assert.equal(room.pending.type, 'pay_rent');
+  player.money = 10;
+  manager.declareBankruptcy('sa');
+  assert.equal(player.bankrupt, true);
+  assert.equal(room.players[1].money, 1510);
+  assert.equal(room.ownership[1], 'b');
+  assert.equal(room.turnIndex, 1);
+});
+
+test('bankruptcy during a card reveal returns the card to its deck', () => {
+  const { manager, room } = setup();
+  initializeDecks(room);
+  const card = drawFromDeck(room, 'chance');
+  room.pending = { type: 'card', deck: 'chance', card };
+  manager.declareBankruptcy('sa');
+  assert.equal(room.cardDecks!.chance.at(-1), card.id);
+  assert.equal(room.pending.type, 'none');
+  assert.equal(room.turnIndex, 1);
 });
 
 test('doubles used to leave jail never award an extra roll, including after landing actions', () => {

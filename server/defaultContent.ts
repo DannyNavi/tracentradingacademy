@@ -88,7 +88,7 @@ export const DEFAULT_COMMUNITY: GameCard[] = [
   { id: 'cm5', text: 'Your Umatube video goes viral. Gain 300 Carats.', effect: { type: 'money', amount: 300 } },
   { id: 'cm6', text: 'You are forced to spark your Oshi. Lose 500 Carats.', effect: { type: 'money', amount: -500 } },
   { id: 'cm7', text: 'You roll 1-star Guts and 2-star Pace on a parent with three days left before CM. Pay 10 Carats.', effect: { type: 'money', amount: -10 } },
-  { id: 'cm8', text: 'Your Oshi wins CM. Gain 2,700 Carats.', effect: { type: 'money', amount: 2700 } },
+  { id: 'cm8', text: 'Your Oshi wins CM. Gain 1,000 Carats.', effect: { type: 'money', amount: 1000 } },
   { id: 'cm9', text: 'You pick up a part-time shift with Ines. Gain 300 Carats.', effect: { type: 'money', amount: 300 } },
   { id: 'cm10', text: 'Gold Ship dropkicks you. Lose 200 Carats.', effect: { type: 'money', amount: -200 } },
   { id: 'cm11', text: 'Sweep Tosho casts a magical Carat-producing spell. Gain 20% more Carats for the next 3 turns.', effect: { type: 'carat_bonus', percent: 20, turns: 3 } },
