@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { buildingLevel, mortgageValue, propertyGroup } from '../shared/rules.js';
+import { buildingLevel, caratGain, mortgageValue, propertyGroup } from '../shared/rules.js';
 import { movePasses } from './cards.js';
+import { creditCarats } from './economy.js';
 import type { Trade, TradeAssets, TradeProposal, TradeResponse } from '../shared/trades.js';
 import type { PlayerPublic, RoomState } from './types.js';
 
@@ -39,13 +40,14 @@ function validateTrade(room: RoomState, trade: Trade) {
   const b = participant(room, trade.playerBId);
   validateAssets(room, a, trade.giveA);
   validateAssets(room, b, trade.giveB);
-  if (!Number.isSafeInteger(a.money - trade.giveA.money + trade.giveB.money) ||
-    !Number.isSafeInteger(b.money - trade.giveB.money + trade.giveA.money)) {
+  const balanceA = a.money - trade.giveA.money + caratGain(a, trade.giveB.money);
+  const balanceB = b.money - trade.giveB.money + caratGain(b, trade.giveA.money);
+  if (!Number.isSafeInteger(balanceA) || !Number.isSafeInteger(balanceB)) {
     throw new Error('The resulting balance is too large.');
   }
   const fee = (ids: number[]) => ids.reduce((sum, id) => sum + (room.mortgaged?.[id] ? Math.ceil(mortgageValue(room.content.properties.find((s) => s.id === id)!) / 10) : 0), 0);
   const feeA = fee(trade.giveB.propertyIds), feeB = fee(trade.giveA.propertyIds);
-  if (a.money - trade.giveA.money + trade.giveB.money < feeA || b.money - trade.giveB.money + trade.giveA.money < feeB) throw new Error('The new owner must be able to pay 10% interest on incoming mortgaged property.');
+  if (balanceA < feeA || balanceB < feeB) throw new Error('The new owner must be able to pay 10% interest on incoming mortgaged property.');
   return { a, b, feeA, feeB };
 }
 
@@ -116,8 +118,12 @@ export function respondToTrade(room: RoomState, playerId: string, input: TradeRe
   trade.approvedBy.push(playerId);
   if (trade.approvedBy.length < 2) return;
   // All checks happen before any transfer; no partial payment or property swap.
-  a.money += trade.giveB.money - trade.giveA.money - feeA;
-  b.money += trade.giveA.money - trade.giveB.money - feeB;
+  a.money -= trade.giveA.money;
+  b.money -= trade.giveB.money;
+  creditCarats(room, a, trade.giveB.money);
+  creditCarats(room, b, trade.giveA.money);
+  a.money -= feeA;
+  b.money -= feeB;
   movePasses(room, a.id, b.id, trade.giveA.freePasses);
   movePasses(room, b.id, a.id, trade.giveB.freePasses);
   a.getOutCards += trade.giveB.freePasses - trade.giveA.freePasses;

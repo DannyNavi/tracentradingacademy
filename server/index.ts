@@ -149,9 +149,13 @@ io.on('connection', (socket) => {
     } catch (e) { ack?.({ ok: false, error: (e as Error).message }); }
   });
 
-  socket.on('game:roll', (ack?: (r: unknown) => void) => {
+  socket.on('game:roll', (
+    input?: { chosenDie: number } | ((r: unknown) => void),
+    response?: (r: unknown) => void,
+  ) => {
+    const ack = typeof input === 'function' ? input : response;
     try {
-      const room = rooms.rollDice(socket.id);
+      const room = rooms.rollDice(socket.id, typeof input === 'function' ? undefined : input?.chosenDie);
       ack?.({ ok: true, room: publicRoom(room) });
       emitRoom(room.code);
     } catch (e) {
@@ -258,6 +262,12 @@ io.on('connection', (socket) => {
     try {
       if (typeof input?.bankrupt !== 'boolean') throw new Error('Choose payment or bankruptcy.');
       const room = rooms.debtAction(socket.id, input.debtId, input.bankrupt);
+      ack?.({ ok: true, room: publicRoom(room) }); emitRoom(room.code);
+    } catch (e) { ack?.({ ok: false, error: (e as Error).message }); }
+  });
+  socket.on('game:declareBankruptcy', (ack?: (r: unknown) => void) => {
+    try {
+      const room = rooms.declareBankruptcy(socket.id);
       ack?.({ ok: true, room: publicRoom(room) }); emitRoom(room.code);
     } catch (e) { ack?.({ ok: false, error: (e as Error).message }); }
   });

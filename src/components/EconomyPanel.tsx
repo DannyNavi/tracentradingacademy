@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RoomState } from '../lib/types';
 import { buildingLevel, liquidationValue, type Auction } from '../../shared/rules';
-import { resolveDebt, respondToAuction } from '../lib/socket';
+import { declareBankruptcy, resolveDebt, respondToAuction } from '../lib/socket';
 import { Carats } from './Carats';
 import { PropertyControls } from './PropertyControls';
 
@@ -52,6 +52,23 @@ function Portfolio({ room, selfId, onClose }: { room: RoomState; selfId: string;
 export function EconomyPanel({ room, selfId }: { room: RoomState; selfId: string }) {
   const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const me = room.players.find((p) => p.id === selfId);
+  const canDeclare = room.phase === 'playing' && me && !me.bankrupt &&
+    room.players[room.turnIndex]?.id === selfId && room.pending.type === 'none' &&
+    !room.auction && !room.debts?.length;
+
+  async function resign() {
+    if (!window.confirm('Declare bankruptcy and leave the game? The bank will auction your properties.')) return;
+    setBusy(true);
+    setError('');
+    try {
+      const result = await declareBankruptcy();
+      if (!result.ok) throw new Error(result.error);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function pay(id: string, bankrupt: boolean) {
     setBusy(true); setError('');
     try { const result = await resolveDebt(id, bankrupt); if (!result.ok) throw new Error(result.error); }
@@ -59,6 +76,7 @@ export function EconomyPanel({ room, selfId }: { room: RoomState; selfId: string
   }
   return <>
     {me && !me.bankrupt && <button className="btn ghost portfolio-button" aria-haspopup="dialog" onClick={() => setOpen(true)}>Manage properties</button>}
+    {canDeclare && <button className="btn danger portfolio-button" disabled={busy} onClick={() => void resign()}>Declare bankruptcy</button>}
     {open && <Portfolio room={room} selfId={selfId} onClose={() => setOpen(false)} />}
     {room.auction && <AuctionPanel key={room.auction.id} room={room} selfId={selfId} auction={room.auction} />}
     {(room.debts ?? []).map((debt) => <section className="economy-notice" key={debt.id} aria-label="Outstanding debt">

@@ -52,6 +52,7 @@ export function GameScreen({ room, selfId }: Props) {
     room.pending.type === 'none' &&
     room.canRoll &&
     !me?.inJail;
+  const choosingDie = canRollOnBoard && me?.dieChoice === 'ready';
 
   return (
     <div className="game-page">
@@ -60,9 +61,11 @@ export function GameScreen({ room, selfId }: Props) {
         <h2 className="turn-line">
           {room.phase === 'finished'
             ? `${winner?.name ?? 'Someone'} wins!`
-            : isMyTurn
-              ? 'Your turn'
-              : `${current?.name}'s turn`}
+            : room.auction && current?.bankrupt
+              ? 'Bankruptcy auction'
+              : isMyTurn
+                ? 'Your turn'
+                : `${current?.name}'s turn`}
         </h2>
 
         <ul className="scoreboard">
@@ -99,6 +102,16 @@ export function GameScreen({ room, selfId }: Props) {
         <D20Roll />
 
         <div className="actions">
+          {choosingDie && (
+            <div className="action-stack" role="group" aria-label="Choose one die face">
+              <p>Maruzensky’s ride. Pick one die face and roll the other die.</p>
+              {[1, 2, 3, 4, 5, 6].map((face) => (
+                <button key={face} className="btn primary" onClick={() => void run(() => rollDice(face))}>
+                  Pick {face} and roll
+                </button>
+              ))}
+            </div>
+          )}
           {room.phase === 'playing' && !room.auction && !room.debts?.length &&
             isMyTurn &&
             room.pending.type === 'none' &&
@@ -156,7 +169,7 @@ export function GameScreen({ room, selfId }: Props) {
               </p>
               <p>{room.pending.card.text}</p>
               <button className="btn primary" onClick={() => void run(resolveCard)}>
-                Continue
+                {room.pending.card.d20Below === undefined ? 'Continue' : 'Roll d20'}
               </button>
             </div>
           )}
@@ -202,9 +215,9 @@ export function GameScreen({ room, selfId }: Props) {
         <Board
           room={room}
           selfId={selfId}
-          canRoll={canRollOnBoard}
-          diceIdleMessage={isMyTurn ? 'Roll when ready' : current ? `${current.name}'s turn` : 'Waiting for turn'}
-          onRoll={() => void run(rollDice)}
+          canRoll={canRollOnBoard && !choosingDie}
+          diceIdleMessage={choosingDie ? 'Choose a die face' : isMyTurn ? 'Roll when ready' : current ? `${current.name}'s turn` : 'Waiting for turn'}
+          onRoll={() => void run(() => rollDice())}
         />
       </div>
     </div>

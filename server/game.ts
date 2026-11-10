@@ -1,5 +1,5 @@
 import { drawFromDeck, initializeDecks, movePasses, returnCard } from './cards.js';
-import { auctionAction, charge, manageProperty, settleDebt, startPropertyAuction } from './economy.js';
+import { auctionAction, charge, creditCarats, liquidatePlayer, manageProperty, settleDebt, startPropertyAuction } from './economy.js';
 import type { PropertyAction } from '../shared/rules.js';
 import { calculateRent } from '../src/lib/rent.js';
 import { proposeTrade, respondToTrade } from './trading.js';
@@ -18,6 +18,7 @@ const PLAYER_COLORS = ['#E4572E', '#2E86AB', '#F2C14E', '#1B998B', '#A23B72', '#
 const STARTING_MONEY = 1500;
 const GO_BONUS = 200;
 const JAIL_FINE = 50;
+const TURN_MODIFIERS = ['movementModifiers', 'caratBonuses'] as const;
 /** Keep lobbies alive briefly so a refresh can rejoin. */
 const DISCONNECT_GRACE_MS = 120_000;
 
@@ -66,7 +67,7 @@ function checkWinner(room: RoomState) {
 
 function collectGo(room: RoomState, player: PlayerPublic, from: number, to: number, forced = false) {
   if (forced || to < from) {
-    player.money += GO_BONUS;
+    creditCarats(room, player, GO_BONUS);
     pushLog(room, `${player.name} collects race earnings (+${GO_BONUS} carats).`);
   }
 }
@@ -93,6 +94,16 @@ function moveRelative(room: RoomState, player: PlayerPublic, steps: number) {
   if (steps > 0) collectGo(room, player, from, player.position);
 }
 
+function resolveMovementRoll(room: RoomState, player: PlayerPublic, diceTotal: number) {
+  const modifier = player.movementModifiers?.reduce((total, effect) =>
+    total + (effect.startsNextTurn ? 0 : effect.amount), 0) ?? 0;
+  const steps = Math.max(0, diceTotal + modifier);
+  if (modifier) pushLog(room, `${player.name} moves ${steps} spaces after the movement modifier.`);
+  if (!steps) return;
+  moveRelative(room, player, steps);
+  resolveLanding(room, player, diceTotal);
+}
+
 function sendToJail(room: RoomState, player: PlayerPublic) {
   recordMovement(player, (10 - player.position + 40) % 40);
   player.position = 10;
@@ -109,20 +120,43 @@ function applyCardEffect(room: RoomState, player: PlayerPublic, card: GameCard) 
   const effect = card.effect;
   room.pending = { type: 'none' };
   pushLog(room, player.name + ': ' + card.text);
+  if (card.d20Below !== undefined) {
+    const roll = 1 + Math.floor(Math.random() * 20);
+    const applies = roll < card.d20Below;
+    pushLog(room, `${player.name} rolled ${roll} on the d20. ${applies ? 'The penalty applies.' : 'No penalty.'}`);
+    if (!applies) return;
+  }
   switch (effect.type) {
     case 'money':
-      if (effect.amount >= 0) player.money += effect.amount;
+      if (effect.amount >= 0) creditCarats(room, player, effect.amount);
       else charge(room, player, -effect.amount, null, card.text);
+      break;
+    case 'money_all':
+      for (const recipient of activePlayers(room)) creditCarats(room, recipient, effect.amount);
+      break;
+    case 'carat_bonus':
+      player.caratBonuses ??= [];
+      player.caratBonuses.push({ amount: effect.percent, turns: effect.turns, startsNextTurn: true });
       break;
     case 'move':
       movePlayer(room, player, effect.position, true);
-      resolveLanding(room, player, room.lastDice ? room.lastDice[0] + room.lastDice[1] : 0);
+      resolveLanding(room, player, room.lastDice ? room.lastDice[0] + room.lastDice[1] : 0, effect.rentFree ? 0 : 1);
       break;
     case 'move_relative':
       moveRelative(room, player, effect.steps);
       resolveLanding(room, player, room.lastDice ? room.lastDice[0] + room.lastDice[1] : 0);
       break;
     case 'jail': sendToJail(room, player); break;
+    case 'skip_turns':
+      player.skippedTurns = (player.skippedTurns ?? 0) + effect.turns;
+      break;
+    case 'movement_modifier':
+      player.movementModifiers ??= [];
+      player.movementModifiers.push({ amount: effect.amount, turns: effect.turns, startsNextTurn: true });
+      break;
+    case 'choose_die':
+      player.dieChoice = 'next_turn';
+      break;
     case 'nearest_rail': {
       const next = [5, 15, 25, 35].find((id) => id > player.position) ?? 5;
       movePlayer(room, player, next, true);
@@ -441,7 +475,7 @@ export class RoomManager {
     return room;
   }
 
-  rollDice(socketId: string): RoomState {
+  rollDice(socketId: string, chosenDie?: number): RoomState {
     const room = this.requireTurn(socketId);
     if (!room.canRoll || room.pending.type !== 'none') throw new Error('Cannot roll now');
     const player = currentPlayer(room);
@@ -452,7 +486,15 @@ export class RoomManager {
       return room;
     }
 
-    const d1 = 1 + Math.floor(Math.random() * 6);
+    if (player.dieChoice === 'ready') {
+      if (chosenDie === undefined || !Number.isInteger(chosenDie) || chosenDie < 1 || chosenDie > 6) {
+        throw new Error('Choose a die face from 1 to 6.');
+      }
+      delete player.dieChoice;
+    } else if (chosenDie !== undefined) {
+      throw new Error('You do not have a die choice for this roll.');
+    }
+    const d1 = chosenDie ?? 1 + Math.floor(Math.random() * 6);
     const d2 = 1 + Math.floor(Math.random() * 6);
     room.lastDice = [d1, d2];
     room.lastRollId = (room.lastRollId ?? 0) + 1;
@@ -470,8 +512,7 @@ export class RoomManager {
     }
 
     pushLog(room, `${player.name} rolled ${d1}+${d2}=${total}${doubles ? ' (doubles)' : ''}.`);
-    moveRelative(room, player, total);
-    resolveLanding(room, player, total);
+    resolveMovementRoll(room, player, total);
 
     if (room.pending.type === 'none' && doubles && !player.inJail && room.phase === 'playing') {
       room.canRoll = true;
@@ -504,6 +545,7 @@ export class RoomManager {
     pushLog(room, `${player.name} passed on ${space.name}.`);
     room.pending = { type: 'none' };
     startPropertyAuction(room, space.id);
+    if (!room.auction) this.afterAction(room);
     return room;
   }
 
@@ -579,8 +621,7 @@ export class RoomManager {
       player.jailTurns = 0;
       pushLog(room, `${player.name} rolled doubles (${d1}+${d2}) and leaves Infirmary!`);
       room.pending = { type: 'none' };
-      moveRelative(room, player, d1 + d2);
-      resolveLanding(room, player, d1 + d2);
+      resolveMovementRoll(room, player, d1 + d2);
       if (room.pending.type === 'none') this.afterAction(room);
       return room;
     }
@@ -662,13 +703,26 @@ export class RoomManager {
     return room;
   }
 
+  declareBankruptcy(socketId: string): RoomState {
+    const room = this.requireTurn(socketId);
+    if (room.pending.type !== 'none') throw new Error('Resolve the current action before declaring bankruptcy.');
+    liquidatePlayer(room, currentPlayer(room));
+    this.continueEconomy(room);
+    return room;
+  }
+
   private continueEconomy(room: RoomState) {
+    if (room.auction) return;
+    if (!room.debts?.length) {
+      if (room.pending.type === 'debt') room.pending = { type: 'none' };
+      while (room.auctionQueue?.length) {
+        startPropertyAuction(room, room.auctionQueue.shift()!);
+        if (room.auction) return;
+      }
+    }
     checkWinner(room);
     if (room.phase === 'finished') { room.auction = null; room.auctionQueue = []; room.debts = []; return; }
     if (room.debts?.length) { room.pending = { type: 'debt' }; return; }
-    if (room.pending.type === 'debt') room.pending = { type: 'none' };
-    if (room.auction) return;
-    if (room.auctionQueue?.length) { startPropertyAuction(room, room.auctionQueue.shift()!); return; }
     const player = currentPlayer(room);
     const resume = room.debtResume; room.debtResume = undefined;
     if (player.bankrupt) { this.endTurn(room); return; }
@@ -677,8 +731,7 @@ export class RoomManager {
     }
     if (resume?.kind === 'jail_roll') {
       player.inJail = false; player.jailTurns = 0;
-      moveRelative(room, player, resume.steps);
-      resolveLanding(room, player, resume.steps);
+      resolveMovementRoll(room, player, resume.steps);
     }
     if (room.auctionResumeCanRoll !== undefined) {
       room.canRoll = room.auctionResumeCanRoll; room.auctionResumeCanRoll = undefined;
@@ -767,12 +820,32 @@ export class RoomManager {
 
   private endTurn(room: RoomState) {
     if (room.phase !== 'playing') return;
+    const player = currentPlayer(room);
+    if (player.dieChoice === 'ready') delete player.dieChoice;
+    for (const kind of TURN_MODIFIERS) {
+      const effects = player[kind];
+      if (!effects) continue;
+      for (const effect of effects) {
+        if (!effect.startsNextTurn) effect.turns -= 1;
+      }
+      player[kind] = effects.filter((effect) => effect.turns > 0);
+    }
     room.doublesCount = 0;
     room.extraRollEligible = false;
     room.lastDice = null;
     room.turnIndex = nextAliveIndex(room, room.turnIndex);
     room.pending = { type: 'none' };
+    while ((currentPlayer(room).skippedTurns ?? 0) > 0) {
+      const skipped = currentPlayer(room);
+      skipped.skippedTurns! -= 1;
+      pushLog(room, `${skipped.name} skips their turn.`);
+      room.turnIndex = nextAliveIndex(room, room.turnIndex);
+    }
     const next = currentPlayer(room);
+    if (next.dieChoice === 'next_turn') next.dieChoice = 'ready';
+    for (const kind of TURN_MODIFIERS) {
+      for (const effect of next[kind] ?? []) delete effect.startsNextTurn;
+    }
     room.canRoll = true;
     pushLog(room, `${next.name}'s turn.`);
   }

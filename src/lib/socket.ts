@@ -57,8 +57,8 @@ export async function startGame() {
 
 export const rollStartingDice = (round: number) => emit('game:startingRoll', { round });
 
-export async function rollDice() {
-  return emit('game:roll');
+export async function rollDice(chosenDie?: number) {
+  return emit('game:roll', chosenDie === undefined ? undefined : { chosenDie });
 }
 
 export async function buyProperty() {
@@ -96,3 +96,4 @@ export function respondToTrade(input: TradeResponse) {
 export const manageProperty = (spaceId: number, action: PropertyAction) => emit('property:manage', { spaceId, action });
 export const respondToAuction = (auctionId: string, amount: number | null, targetId?: number) => emit('auction:respond', { auctionId, amount, targetId });
 export const resolveDebt = (debtId: string, bankrupt = false) => emit('debt:resolve', { debtId, bankrupt });
+export const declareBankruptcy = () => emit('game:declareBankruptcy');

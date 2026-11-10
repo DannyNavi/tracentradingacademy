@@ -5,7 +5,9 @@ import { charge, startPropertyAuction } from './economy.js';
 import { drawFromDeck, initializeDecks } from './cards.js';
 import { bankSupply, buildingLevel } from '../shared/rules.js';
 import { calculateRent } from '../src/lib/rent.js';
-import type { CardEffect } from './types.js';
+import type { CardEffect, GameCard } from './types.js';
+
+const infirmaryPass: GameCard = { id: 'pass', text: 'Get out of Infirmary free.', effect: { type: 'get_out_of_jail' } };
 
 function setup() {
   const manager = new RoomManager();
@@ -15,8 +17,8 @@ function setup() {
   room.phase = 'playing'; room.canRoll = true;
   room.buildings = {}; room.mortgaged = {}; room.debts = [];
   const own = (ids: number[], id = 'a') => ids.forEach((n) => { room.ownership[n] = id; });
-  const playCard = (effect: CardEffect) => {
-    room.pending = { type: 'card', deck: 'chance', card: { id: 'test', text: 'Test card', effect } };
+  const playCard = (effect: CardEffect, d20Below?: number) => {
+    room.pending = { type: 'card', deck: 'chance', card: { id: 'test', text: 'Test card', effect, d20Below } };
     manager.acknowledgeCard('sa');
   };
   return { manager, room, own, playCard };
@@ -156,6 +158,50 @@ test('bank bankruptcy returns mortgage-free properties to sequential auctions be
   assert.equal(room.ownership[1], 'b'); assert.equal(room.ownership[3], 'b');
 });
 
+test('voluntary bankruptcy auctions all properties before naming the last player the winner', () => {
+  const { manager, room, own } = setup();
+  room.players.pop();
+  own([1, 3, 5]);
+  room.buildings = { 1: 1, 3: 1 };
+  room.mortgaged = { 5: true };
+
+  assert.throws(() => manager.declareBankruptcy('sb'), /Not your turn/);
+  room.pending = { type: 'pay_tax', amount: 100 };
+  assert.throws(() => manager.declareBankruptcy('sa'), /Resolve the current action/);
+  manager.acknowledgePay('sa');
+  manager.declareBankruptcy('sa');
+
+  assert.equal(room.players[0].bankrupt, true);
+  assert.equal(room.players[0].money, 0);
+  assert.deepEqual(room.ownership, {});
+  assert.deepEqual(room.buildings, {});
+  assert.deepEqual(room.mortgaged, {});
+  for (const spaceId of [1, 3, 5]) {
+    assert.equal(room.phase, 'playing');
+    const auction = room.auction!;
+    assert.equal(auction.spaceId, spaceId);
+    assert.deepEqual(auction.eligible, ['b']);
+    manager.auctionAction('sb', auction.id, spaceId === 3 ? null : 10);
+  }
+  assert.deepEqual(room.ownership, { 1: 'b', 5: 'b' });
+  assert.equal(room.auction, null);
+  assert.equal(room.phase, 'finished');
+  assert.equal(room.winnerId, 'b');
+});
+
+test('bankruptcy without connected bidders releases properties and advances the turn', () => {
+  const { manager, room, own } = setup();
+  own([1, 3]);
+  room.players[1].connected = false;
+  room.players[2].connected = false;
+  manager.declareBankruptcy('sa');
+  assert.equal(room.auction, null);
+  assert.deepEqual(room.auctionQueue, []);
+  assert.deepEqual(room.ownership, {});
+  assert.equal(room.turnIndex, 1);
+  assert.equal(room.canRoll, true);
+});
+
 test('doubles used to leave jail never award an extra roll, including after landing actions', () => {
   const { manager, room, own } = setup(); room.players[0].position = 10; room.players[0].inJail = true;
   own([12]); room.extraRollEligible = true;
@@ -176,17 +222,19 @@ test('third failed jail roll waits for its fine to be funded before movement res
 });
 
 test('shuffled cards cycle in order and held free-pass cards remain out of circulation', () => {
-  const { manager, room } = setup(); initializeDecks(room);
-  const card = room.content.chance.find((c) => c.effect.type === 'get_out_of_jail')!;
-  room.cardDecks!.chance = [card.id, ...room.cardDecks!.chance.filter((id) => id !== card.id)];
-  const drawn = drawFromDeck(room, 'chance');
-  room.pending = { type: 'card', deck: 'chance', card: drawn }; manager.acknowledgeCard('sa');
-  assert.equal(room.players[0].getOutCards, 1); assert.equal(room.cardDecks!.chance.includes(card.id), false);
-  const next = room.cardDecks!.chance[0]; const second = drawFromDeck(room, 'chance'); assert.equal(second.id, next);
-  room.pending = { type: 'card', deck: 'chance', card: second }; manager.acknowledgeCard('sa');
-  assert.equal(room.cardDecks!.chance.at(-1), next);
+  const { manager, room } = setup();
+  const card = infirmaryPass;
+  room.content.community.push(card);
+  initializeDecks(room);
+  room.cardDecks!.community = [card.id, ...room.cardDecks!.community.filter((id) => id !== card.id)];
+  const drawn = drawFromDeck(room, 'community');
+  room.pending = { type: 'card', deck: 'community', card: drawn }; manager.acknowledgeCard('sa');
+  assert.equal(room.players[0].getOutCards, 1); assert.equal(room.cardDecks!.community.includes(card.id), false);
+  const next = room.cardDecks!.community[0]; const second = drawFromDeck(room, 'community'); assert.equal(second.id, next);
+  room.pending = { type: 'card', deck: 'community', card: second }; manager.acknowledgeCard('sa');
+  assert.equal(room.cardDecks!.community.at(-1), next);
   room.pending = { type: 'none' }; room.canRoll = true; room.players[0].inJail = true;
-  manager.jailAction('sa', 'card'); assert.equal(room.cardDecks!.chance.at(-1), card.id);
+  manager.jailAction('sa', 'card'); assert.equal(room.cardDecks!.community.at(-1), card.id);
 });
 
 test('repair cards charge each house and hotel once; player-to-player cards use real participants', () => {
@@ -194,6 +242,45 @@ test('repair cards charge each house and hotel once; player-to-player cards use 
   playCard({ type: 'repairs', house:25, hotel:100 }); assert.equal(room.players[0].money, 1325);
   playCard({ type: 'collect_each', amount:10 }); assert.deepEqual(room.players.map((p) => p.money), [1345,1490,1490]);
   playCard({ type: 'pay_each', amount:50 }); assert.deepEqual(room.players.map((p) => p.money), [1245,1540,1540]);
+});
+
+test('Sweep Tosho boosts incoming payments, mortgages, trades, and rewards for three turns', () => {
+  const { manager, room, own } = setup();
+  const [alice, bob, cara] = room.players;
+  const raffle = (id: string) => {
+    room.pending = { type: 'card', deck: 'community', card: room.content.community.find((card) => card.id === id)! };
+    manager.acknowledgeCard('sa');
+  };
+  own([1]);
+  raffle('cm11');
+  charge(room, bob, 50, alice.id, 'payment before the spell starts');
+  assert.equal(alice.money, 1550);
+
+  manager.endTurnManual('sa');
+  room.canRoll = false; manager.endTurnManual('sb');
+  room.canRoll = false; manager.endTurnManual('sc');
+  manager.propertyAction('sa', 1, 'mortgage');
+  assert.equal(alice.money, 1586);
+
+  manager.proposeTrade('sa', {
+    toPlayerId: 'b',
+    give: { money: 0, propertyIds: [], freePasses: 0 },
+    receive: { money: 100, propertyIds: [], freePasses: 0 },
+  });
+  const trade = room.trades![0];
+  for (const socket of ['sa', 'sb']) manager.respondToTrade(socket, { tradeId: trade.id, revision: 1, action: 'agree' });
+  assert.equal(alice.money, 1706);
+  assert.equal(bob.money, 1350);
+
+  raffle('cm16');
+  assert.deepEqual(room.players.map((player) => player.money), [2426, 1950, 2100]);
+  for (const turn of [1, 2, 3]) {
+    room.canRoll = false; manager.endTurnManual('sa');
+    charge(room, cara, 50, alice.id, 'payment between turns');
+    assert.equal(alice.money, turn === 3 ? 2596 : 2426 + turn * 60);
+    room.canRoll = false; manager.endTurnManual('sb');
+    room.canRoll = false; manager.endTurnManual('sc');
+  }
 });
 
 test('nearest transport cards charge double rent and mortgage exemptions still apply', () => {
@@ -204,10 +291,76 @@ test('nearest transport cards charge double rent and mortgage exemptions still a
   playCard({ type: 'nearest_rail' }); assert.equal(room.pending.type, 'none');
 });
 
+test('the Hot Spring Getaway offers purchase when available and waives rent when owned', () => {
+  const { room, own, playCard } = setup();
+  const effect = { type: 'move', position: 37, rentFree: true } as const;
+  playCard(effect);
+  assert.deepEqual(room.pending, { type: 'buy_or_pass', spaceId: 37, price: 350 });
+  own([37], 'b');
+  playCard(effect);
+  assert.equal(room.players[0].position, 37);
+  assert.deepEqual(room.pending, { type: 'none' });
+});
+
+test('the Overwatch d20 check skips exactly two future turns on a roll below 10', () => {
+  const { manager, room, playCard } = setup();
+  const effect = { type: 'skip_turns', turns: 2 } as const;
+  withDice([0.45], () => playCard(effect, 10));
+  assert.equal(room.players[0].skippedTurns, undefined);
+  withDice([0.4], () => playCard(effect, 10));
+  manager.endTurnManual('sa');
+  for (const next of [1, 1, 0]) {
+    room.canRoll = false; manager.endTurnManual('sb');
+    room.canRoll = false; manager.endTurnManual('sc');
+    assert.equal(room.turnIndex, next);
+  }
+});
+
+test('movement modifiers start next turn and expire after three played turns', () => {
+  const { manager, room, own, playCard } = setup();
+  const player = room.players[0];
+  const effect = { type: 'movement_modifier', amount: -2, turns: 3 } as const;
+  own([16, 18]);
+  withDice([0.85], () => playCard(effect, 18));
+  assert.equal(player.movementModifiers, undefined);
+  room.extraRollEligible = true;
+  withDice([0.8], () => playCard(effect, 18));
+  player.position = 15;
+  withDice([0, 0.2], () => manager.rollDice('sa'));
+  assert.equal(player.position, 18);
+  for (const expected of [16, 16, 16, 18]) {
+    manager.endTurnManual('sa');
+    room.canRoll = false; manager.endTurnManual('sb');
+    room.canRoll = false; manager.endTurnManual('sc');
+    player.position = 15;
+    withDice([0, 0.2], () => manager.rollDice('sa'));
+    assert.equal(player.position, expected);
+  }
+});
+
+test('Maruzensky’s die choice is available once on the next turn', () => {
+  const { manager, room, own, playCard } = setup();
+  own([3, 8]);
+  room.extraRollEligible = true;
+  playCard({ type: 'choose_die' });
+  assert.throws(() => manager.rollDice('sa', 6), /do not have a die choice/);
+  withDice([0, 0.2], () => manager.rollDice('sa'));
+  manager.endTurnManual('sa');
+  room.canRoll = false; manager.endTurnManual('sb');
+  room.canRoll = false; manager.endTurnManual('sc');
+  assert.throws(() => manager.rollDice('sa'), /Choose a die face/);
+  assert.throws(() => manager.rollDice('sa', 7), /Choose a die face/);
+  withDice([0.5], () => manager.rollDice('sa', 1));
+  assert.deepEqual(room.lastDice, [1, 4]);
+  assert.equal(room.players[0].position, 8);
+  assert.equal(room.players[0].dieChoice, undefined);
+});
+
 test('mortgaged-property trades charge incoming interest and preserve free-pass deck identity', () => {
   const { manager, room, own } = setup(); own([1]); room.mortgaged![1] = true;
-  const pass = room.content.chance.find((c) => c.effect.type === 'get_out_of_jail')!;
-  room.heldCards = { a: [{ deck:'chance', id:pass.id }] }; room.players[0].getOutCards = 1;
+  const pass = infirmaryPass;
+  room.content.community.push(pass);
+  room.heldCards = { a: [{ deck:'community', id:pass.id }] }; room.players[0].getOutCards = 1;
   manager.proposeTrade('sa', { toPlayerId:'b', give:{ money:0,propertyIds:[1],freePasses:1 }, receive:{ money:10,propertyIds:[],freePasses:0 } });
   const trade = room.trades![0];
   for (const socket of ['sa','sb']) manager.respondToTrade(socket, { tradeId:trade.id,revision:1,action:'agree' });
@@ -243,12 +396,15 @@ test('mortgaged inheritance charges interest to the recipient without inventing 
   assert.equal(room.players[1].money, 1497);
 });
 
-test('inherited mortgage interest can create a new debt and bankruptcy leaves a valid next player', () => {
+test('bankruptcy from inherited mortgage interest auctions the property before naming the winner', () => {
   const { manager, room, own } = setup(); own([1]); room.mortgaged![1] = true;
   room.players[0].money = 0; room.players[1].money = 0;
   charge(room, room.players[0], 100, 'b', 'rent'); manager.debtAction('sa', room.debts![0].id, true);
   assert.equal(room.debts![0].playerId, 'b'); assert.equal(room.debts![0].amount, 3);
   manager.debtAction('sb', room.debts![0].id, true);
+  assert.equal(room.auction?.spaceId, 1);
+  assert.equal(room.phase, 'playing');
+  manager.auctionAction('sc', room.auction!.id, null);
   assert.equal(room.phase, 'finished'); assert.equal(room.winnerId, 'c'); assert.equal(room.debts!.length, 0);
 });
 

@@ -1,9 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { bankSupply, buildingCost, buildingLevel, buildProblem, liquidationValue, mortgageValue, propertyGroup, type PropertyAction } from '../shared/rules.js';
+import { bankSupply, buildingCost, buildingLevel, buildProblem, caratGain, liquidationValue, mortgageValue, propertyGroup, type PropertyAction } from '../shared/rules.js';
 import type { PlayerPublic, RoomState } from './types.js';
 import { movePasses } from './cards.js';
 
 export function logEconomy(room: RoomState, message: string) { room.log = [message, ...room.log].slice(0, 40); }
+
+export function creditCarats(room: RoomState, player: PlayerPublic, amount: number) {
+  const total = caratGain(player, amount);
+  player.money += total;
+  if (total > amount) logEconomy(room, `${player.name} gained ${total - amount} bonus Carats from Sweep Tosho’s spell.`);
+}
+
 export function livingPlayer(room: RoomState, id: string) {
   const player = room.players.find((p) => p.id === id && !p.bankrupt);
   if (!player || room.phase !== 'playing') throw new Error('Player is not active in this game.');
@@ -15,7 +22,7 @@ export function charge(room: RoomState, player: PlayerPublic, amount: number, to
   if (player.money >= amount) {
     player.money -= amount;
     const recipient = room.players.find((p) => p.id === toPlayerId && !p.bankrupt);
-    if (recipient) recipient.money += amount;
+    if (recipient) creditCarats(room, recipient, amount);
     logEconomy(room, `${player.name} paid ${amount} carats${recipient ? ` to ${recipient.name}` : ' to the bank'}: ${reason}.`);
     return true;
   }
@@ -29,9 +36,16 @@ export function charge(room: RoomState, player: PlayerPublic, amount: number, to
 }
 
 export function startPropertyAuction(room: RoomState, spaceId: number) {
-  room.auction = { id: randomUUID(), kind: 'property', spaceId, eligible: room.players.filter((p) => !p.bankrupt && p.connected).map((p) => p.id), passed: [], highBid: 0, highBidderId: null };
+  const eligible = room.players.filter((p) => !p.bankrupt && p.connected).map((p) => p.id);
+  const name = room.content.properties.find((s) => s.id === spaceId)?.name;
+  if (!eligible.length) {
+    room.auction = null;
+    logEconomy(room, `No bidders available for ${name}. It remains with the bank.`);
+    return;
+  }
+  room.auction = { id: randomUUID(), kind: 'property', spaceId, eligible, passed: [], highBid: 0, highBidderId: null };
   room.canRoll = false;
-  logEconomy(room, `Auction opened for ${room.content.properties.find((s) => s.id === spaceId)?.name}.`);
+  logEconomy(room, `Auction opened for ${name}.`);
 }
 
 export function auctionAction(room: RoomState, playerId: string, id: string, amount: number | null, targetId?: number) {
@@ -98,15 +112,18 @@ export function manageProperty(room: RoomState, playerId: string, spaceId: numbe
   } else if (action === 'sell') {
     if (!level || group.some((s) => buildingLevel(room, s.id) > level)) throw new Error('Sell buildings evenly, starting with the most developed properties.');
     if (level === 5 && bankSupply(room).houses < 4) throw new Error('The bank needs four houses to replace this hotel. Sell all buildings in this group instead.');
-    room.buildings[spaceId] = level - 1; player.money += Math.floor(buildingCost(space) / 2);
+    room.buildings[spaceId] = level - 1; creditCarats(room, player, Math.floor(buildingCost(space) / 2));
   } else if (action === 'sell_group') {
     if (!group.some((s) => buildingLevel(room, s.id))) throw new Error('This group has no buildings.');
     if (group.some((s) => room.ownership[s.id] !== playerId)) throw new Error('You must own the whole group.');
-    for (const member of group) { player.money += buildingLevel(room, member.id) * Math.floor(buildingCost(member) / 2); room.buildings[member.id] = 0; }
+    for (const member of group) {
+      creditCarats(room, player, buildingLevel(room, member.id) * Math.floor(buildingCost(member) / 2));
+      room.buildings[member.id] = 0;
+    }
   } else if (action === 'mortgage') {
     if (room.mortgaged[spaceId]) throw new Error('This property is already mortgaged.');
     if (group.some((s) => buildingLevel(room, s.id))) throw new Error('Sell all buildings in this group before mortgaging.');
-    room.mortgaged[spaceId] = true; player.money += mortgageValue(space);
+    room.mortgaged[spaceId] = true; creditCarats(room, player, mortgageValue(space));
   } else {
     if (!room.mortgaged[spaceId]) throw new Error('This property is not mortgaged.');
     const cost = mortgageValue(space) + Math.ceil(mortgageValue(space) / 10);
@@ -124,16 +141,22 @@ export function settleDebt(room: RoomState, playerId: string, debtId: string, ba
     if (player.money < debt.amount) throw new Error('Raise funds by selling buildings, mortgaging, or trading first.');
     player.money -= debt.amount;
     const recipient = room.players.find((p) => p.id === debt.toPlayerId && !p.bankrupt);
-    if (recipient) recipient.money += debt.amount;
+    if (recipient) creditCarats(room, recipient, debt.amount);
     logEconomy(room, `${player.name} settled ${debt.amount} carats for ${debt.reason}.`);
     room.debts = room.debts!.filter((d) => d.id !== debtId);
     return;
   }
   if (liquidationValue(room, playerId) >= debt.amount) throw new Error('Your assets can cover this debt. Sell buildings or mortgage property first.');
   const creditor = room.players.find((p) => p.id === debt.toPlayerId && !p.bankrupt);
+  liquidatePlayer(room, player, creditor);
+}
+
+export function liquidatePlayer(room: RoomState, player: PlayerPublic, creditor?: PlayerPublic) {
+  const playerId = player.id;
+  let proceeds = player.money;
   let interest = 0;
   for (const space of room.content.properties.filter((s) => room.ownership[s.id] === playerId)) {
-    player.money += buildingLevel(room, space.id) * Math.floor(buildingCost(space) / 2);
+    proceeds += buildingLevel(room, space.id) * Math.floor(buildingCost(space) / 2);
     if (room.buildings) delete room.buildings[space.id];
     if (creditor) {
       room.ownership[space.id] = creditor.id;
@@ -144,10 +167,10 @@ export function settleDebt(room: RoomState, playerId: string, debtId: string, ba
       room.auctionQueue ??= []; room.auctionQueue.push(space.id);
     }
   }
-  if (creditor) { creditor.money += player.money; creditor.getOutCards += player.getOutCards; }
+  if (creditor) { creditCarats(room, creditor, proceeds); creditor.getOutCards += player.getOutCards; }
   movePasses(room, playerId, creditor?.id ?? null, player.getOutCards);
   player.money = 0; player.getOutCards = 0; player.bankrupt = true;
-  room.debts = room.debts!.filter((d) => d.playerId !== playerId).map((d) => d.toPlayerId === playerId ? { ...d, toPlayerId: creditor?.id ?? null } : d);
+  room.debts = (room.debts ?? []).filter((d) => d.playerId !== playerId).map((d) => d.toPlayerId === playerId ? { ...d, toPlayerId: creditor?.id ?? null } : d);
   logEconomy(room, `${player.name} declared bankruptcy${creditor ? `; assets transferred to ${creditor.name}` : '; properties returned to the bank for auction'}.`);
   if (creditor && interest) charge(room, creditor, interest, null, 'interest on inherited mortgages');
 }

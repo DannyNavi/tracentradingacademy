@@ -6,7 +6,7 @@ import { bankSupply, buildingLevel, buildProblem, liquidationValue, propertyGrou
 test('seeded complete games preserve money, ownership, building, and card-deck invariants', () => {
   const originalRandom = Math.random;
   try {
-    for (const seed of [17, 42, 931]) {
+    for (const seed of [17, 42, 8]) {
       let randomState = seed;
       Math.random = () => { randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0; return randomState / 4294967296; };
       const manager = new RoomManager();
@@ -47,7 +47,7 @@ test('seeded complete games preserve money, ownership, building, and card-deck i
           else if (room.pending.type === 'card') manager.acknowledgeCard(socket);
           else if (player.inJail && room.canRoll) manager.jailAction(socket,player.getOutCards ? 'card' : player.money >= 100 ? 'pay' : 'roll');
           else if (room.pending.type === 'jail_choice') manager.jailAction(socket,'roll');
-          else if (room.canRoll) manager.rollDice(socket);
+          else if (room.canRoll) manager.rollDice(socket, player.dieChoice === 'ready' ? 3 : undefined);
           else {
             const build = room.content.properties.find((s) => player.money >= 500 && !buildProblem(room,player.id,s));
             if (build) manager.propertyAction(socket,build.id,'build'); else manager.endTurnManual(socket);

@@ -1,4 +1,4 @@
-import type { BoardSpace, RoomState } from '../src/lib/types.js';
+import type { BoardSpace, PlayerPublic, RoomState } from '../src/lib/types.js';
 
 export type Deck = 'chance' | 'community';
 export type HeldCard = { deck: Deck; id: string };
@@ -32,8 +32,16 @@ export function buildProblem(room: RoomState, ownerId: string, space: BoardSpace
   if (level === 4 ? bankSupply(room).hotels < 1 : bankSupply(room).houses < 1) return 'The bank has no buildings of this type available.';
   return null;
 }
+export function caratGain(player: PlayerPublic, amount: number) {
+  const percent = player.caratBonuses?.reduce((highest, bonus) =>
+    bonus.startsNextTurn ? highest : Math.max(highest, bonus.amount), 0) ?? 0;
+  return amount + Math.floor(amount * percent / 100);
+}
+
 export function liquidationValue(room: RoomState, playerId: string) {
   const player = room.players.find((p) => p.id === playerId);
-  return (player?.money ?? 0) + room.content.properties.reduce((sum, space) => room.ownership[space.id] !== playerId ? sum
-    : sum + buildingLevel(room, space.id) * Math.floor(buildingCost(space) / 2) + (room.mortgaged?.[space.id] ? 0 : mortgageValue(space)), 0);
+  if (!player) return 0;
+  return room.content.properties.reduce((sum, space) => room.ownership[space.id] !== playerId ? sum
+    : sum + caratGain(player, buildingLevel(room, space.id) * Math.floor(buildingCost(space) / 2)) +
+      (room.mortgaged?.[space.id] ? 0 : caratGain(player, mortgageValue(space))), player.money);
 }

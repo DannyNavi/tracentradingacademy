@@ -3,9 +3,14 @@ import type { Trade } from '../../shared/trades.js';
 
 export type CardEffect =
   | { type: 'money'; amount: number }
-  | { type: 'move'; position: number }
+  | { type: 'money_all'; amount: number }
+  | { type: 'carat_bonus'; percent: number; turns: number }
+  | { type: 'move'; position: number; rentFree?: boolean }
   | { type: 'move_relative'; steps: number }
   | { type: 'jail' }
+  | { type: 'skip_turns'; turns: number }
+  | { type: 'movement_modifier'; amount: number; turns: number }
+  | { type: 'choose_die' }
   | { type: 'nearest_rail' }
   | { type: 'nearest_utility' }
   | { type: 'pay_each'; amount: number }
@@ -17,6 +22,7 @@ export type GameCard = {
   id: string;
   text: string;
   effect: CardEffect;
+  d20Below?: number;
 };
 
 export type SpaceKind =
@@ -52,6 +58,10 @@ export type GameContent = {
 };
 
 export type PlayerPublic = {
+  skippedTurns?: number;
+  movementModifiers?: { amount: number; turns: number; startsNextTurn?: boolean }[];
+  caratBonuses?: { amount: number; turns: number; startsNextTurn?: boolean }[];
+  dieChoice?: 'next_turn' | 'ready';
   movements?: { id: number; path: number[] }[];
   id: string;
   name: string;
