@@ -676,6 +676,11 @@ select:focus {
   overflow: auto;
 }
 
+html[data-theme='dark'] .sidebar {
+  background: var(--bg-soft);
+  color-scheme: dark;
+}
+
 .turn-line {
   font-family: var(--font-display);
   font-size: 1.85rem;
@@ -859,12 +864,6 @@ select:focus {
   gap: 3px;
 }
 
-.die-face-0 { transform: translateZ(24px); }
-.die-face-1 { transform: rotateY(180deg) translateZ(24px); }
-.die-face-2 { transform: rotateY(90deg) translateZ(24px); }
-.die-face-3 { transform: rotateY(-90deg) translateZ(24px); }
-.die-face-4 { transform: rotateX(90deg) translateZ(24px); }
-.die-face-5 { transform: rotateX(-90deg) translateZ(24px); }
 .pip {
   width: 100%;
   height: 100%;
@@ -1426,22 +1425,3 @@ select:focus {
 .starting-actions { display: grid; justify-items: center; text-align: center; gap: 12px; margin-top: 28px; }
 .starting-actions .btn { min-width: 240px; }
 .starting-history { margin-top: 24px; }
-.d20-panel { text-align: center; padding: 16px; border: 1px solid var(--border, #627c7040); border-radius: 16px; margin: 16px 0; }
-.d20-panel h3 { margin: 0 0 8px; }
-.d20-stage { display: grid; place-items: center; height: 132px; }
-.d20-die { width: 112px; height: 124px; overflow: visible; filter: drop-shadow(0 6px 5px #0003); }
-.d20-shell { fill: #2f6b54; stroke: #b9dec8; stroke-width: 2; stroke-linejoin: round; }
-.d20-facets { fill: none; stroke: #a4d5bb; stroke-width: 1.5; stroke-linejoin: round; }
-.d20-die text { fill: #fff; font: 700 24px var(--font-display, sans-serif); paint-order: stroke; stroke: #2f6b54; stroke-width: 5px; }
-.d20-result { min-height: 1.5em; margin: 8px 0; }
-.d20-stage.is-rolling .d20-die { animation: d20-tumble 1s ease-out both; }
-@keyframes d20-tumble {
-  0% { transform: translateY(0) rotate(0deg) scale(1); }
-  25% { transform: translateY(-16px) rotate(150deg) scale(.85); }
-  55% { transform: translateY(3px) rotate(380deg) scale(1.05); }
-  78% { transform: translateY(-6px) rotate(620deg) scale(.95); }
-  100% { transform: translateY(0) rotate(720deg) scale(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .d20-stage.is-rolling .d20-die { animation: none; }
-}

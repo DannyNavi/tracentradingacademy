@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { bankSupply, buildingCost, buildingLevel, buildProblem, caratGain, liquidationValue, mortgageValue, propertyGroup, type PropertyAction } from '../shared/rules.js';
+import { bankSupply, buildingCost, buildingLevel, buildProblem, caratGain, liquidationValue, MIN_BID_INCREASE, mortgageValue, propertyGroup, type PropertyAction } from '../shared/rules.js';
 import type { PlayerPublic, RoomState } from './types.js';
 import { movePasses } from './cards.js';
 
@@ -57,7 +57,9 @@ export function auctionAction(room: RoomState, playerId: string, id: string, amo
     if (auction.highBidderId === playerId) throw new Error('The highest bidder cannot withdraw their bid.');
     auction.passed.push(playerId);
   } else {
-    if (!Number.isSafeInteger(amount) || amount <= auction.highBid || amount > player.money) throw new Error('Bid a whole amount above the current bid that you can afford.');
+    if (!Number.isSafeInteger(amount) || amount < auction.highBid + MIN_BID_INCREASE || amount > player.money) {
+      throw new Error(`Bid a whole amount you can afford, at least ${MIN_BID_INCREASE} Carats above the current bid.`);
+    }
     if (auction.kind !== 'property' && !auction.buildTargets?.[playerId]?.includes(targetId!)) throw new Error('Choose one of your eligible properties for this building.');
     auction.highBid = amount; auction.highBidderId = playerId; auction.winnerTarget = targetId;
     logEconomy(room, `${player.name} bid ${amount} carats.`);
@@ -83,6 +85,9 @@ export function manageProperty(room: RoomState, playerId: string, spaceId: numbe
   const space = room.content.properties.find((s) => s.id === spaceId);
   if (!space || !['property', 'rail', 'utility'].includes(space.kind) || room.ownership[spaceId] !== playerId) throw new Error('You do not own this property.');
   if (!['build', 'sell', 'sell_group', 'mortgage', 'unmortgage'].includes(action)) throw new Error('Unknown property action.');
+  if (action === 'unmortgage' && room.players[room.turnIndex]?.id !== playerId) {
+    throw new Error('You can only repay mortgages on your turn.');
+  }
   room.buildings ??= {}; room.mortgaged ??= {};
   const group = propertyGroup(room, space);
   const level = buildingLevel(room, spaceId);

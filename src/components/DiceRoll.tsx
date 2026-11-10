@@ -5,8 +5,8 @@ const PIP_MAP: Record<number, number[]> = {
   4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8],
 };
 const ORIENTATION: Record<number, [number, number]> = {
-  1: [0, 0], 2: [90, 0], 3: [0, -90],
-  4: [0, 90], 5: [-90, 0], 6: [0, 180],
+  1: [0, 0], 2: [-90, 0], 3: [0, -90],
+  4: [0, 90], 5: [90, 0], 6: [0, 180],
 };
 
 function Die({ value }: { value: number }) {
@@ -15,10 +15,11 @@ function Die({ value }: { value: number }) {
     <div className="die-view" role="img" aria-label={`Die showing ${value}`}>
       <div className="die-angle">
         <div className="die" style={{ '--die-x': `${x}deg`, '--die-y': `${y}deg` } as CSSProperties}>
-          {[1, 6, 3, 4, 2, 5].map((face, index) => (
-            <div key={face} className={`die-face die-face-${index}`} aria-hidden="true">
+          {Object.entries(ORIENTATION).map(([face, [faceX, faceY]]) => (
+            <div key={face} className="die-face" aria-hidden="true"
+              style={{ transform: `rotateY(${-faceY}deg) rotateX(${-faceX}deg) translateZ(24px)` }}>
               {Array.from({ length: 9 }, (_, i) => (
-                <span key={i} className={`pip ${PIP_MAP[face].includes(i) ? 'on' : ''}`} />
+                <span key={i} className={`pip ${PIP_MAP[Number(face)].includes(i) ? 'on' : ''}`} />
               ))}
             </div>
           ))}
@@ -60,7 +61,7 @@ export function DiceRoll({ dice, animKey, idleMessage }: Props) {
         <Die value={dice[0]} />
         <Die value={dice[1]} />
       </div>
-      <p className="dice-total" role="status">{rolling ? 'Rolling…' : `= ${dice[0] + dice[1]}`}</p>
+      <p className="dice-total" role="status">{rolling ? 'Rolling…' : `${dice[0]} + ${dice[1]} = ${dice[0] + dice[1]}`}</p>
     </div>
   );
 }

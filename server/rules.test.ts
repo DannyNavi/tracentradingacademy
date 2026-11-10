@@ -67,6 +67,11 @@ test('mortgage pays half value, stops rent, and redemption costs principal plus 
   assert.equal(calculateRent(room, room.content.properties[1], 7), 0);
   assert.equal(calculateRent(room, room.content.properties[3], 7), 8);
   assert.throws(() => manager.propertyAction('sa', 1, 'mortgage'), /already mortgaged/);
+  room.turnIndex = 1;
+  assert.throws(() => manager.propertyAction('sa', 1, 'unmortgage'), /only repay mortgages on your turn/);
+  assert.equal(room.players[0].money, 1530);
+  assert.equal(room.mortgaged![1], true);
+  room.turnIndex = 0;
   manager.propertyAction('sa', 1, 'unmortgage');
   assert.equal(room.players[0].money, 1497);
   room.buildings![3] = 1;
@@ -92,8 +97,9 @@ test('passing a property starts a multiplayer auction and blocks normal game act
   assert.throws(() => manager.rollDice('sa'), /auction/);
   assert.throws(() => manager.auctionAction('sa', auction.id, -5), /whole amount/);
   assert.throws(() => manager.auctionAction('sa', auction.id, 1501), /afford/);
+  assert.throws(() => manager.auctionAction('sa', auction.id, 9), /at least 10 Carats/);
   manager.auctionAction('sa', auction.id, 10);
-  assert.throws(() => manager.auctionAction('sb', auction.id, 10), /above/);
+  assert.throws(() => manager.auctionAction('sb', auction.id, 19), /at least 10 Carats/);
   manager.auctionAction('sb', auction.id, 20);
   manager.auctionAction('sa', auction.id, null);
   assert.throws(() => manager.auctionAction('sa', auction.id, 30), /not bidding/);
@@ -152,7 +158,7 @@ test('bank bankruptcy returns mortgage-free properties to sequential auctions be
   assert.equal(room.mortgaged![1], undefined); assert.equal(room.auction!.spaceId, 1);
   for (const spaceId of [1,3]) {
     const id = room.auction!.id; assert.equal(room.auction!.spaceId, spaceId);
-    manager.auctionAction('sb', id, 5); manager.auctionAction('sc', id, null);
+    manager.auctionAction('sb', id, 10); manager.auctionAction('sc', id, null);
   }
   assert.equal(room.turnIndex, 1); assert.equal(room.canRoll, true);
   assert.equal(room.ownership[1], 'b'); assert.equal(room.ownership[3], 'b');
@@ -307,7 +313,9 @@ test('the Overwatch d20 check skips exactly two future turns on a roll below 10'
   const effect = { type: 'skip_turns', turns: 2 } as const;
   withDice([0.45], () => playCard(effect, 10));
   assert.equal(room.players[0].skippedTurns, undefined);
-  withDice([0.4], () => playCard(effect, 10));
+  assert.deepEqual(room.lastD20Roll, { playerId: 'a', value: 10, penaltyApplies: false });
+  withDice([0.05], () => playCard(effect, 10));
+  assert.deepEqual(room.lastD20Roll, { playerId: 'a', value: 2, penaltyApplies: true });
   manager.endTurnManual('sa');
   for (const next of [1, 1, 0]) {
     room.canRoll = false; manager.endTurnManual('sb');

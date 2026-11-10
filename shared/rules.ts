@@ -3,6 +3,7 @@ import type { BoardSpace, PlayerPublic, RoomState } from '../src/lib/types.js';
 export type Deck = 'chance' | 'community';
 export type HeldCard = { deck: Deck; id: string };
 export type Debt = { id: string; playerId: string; toPlayerId: string | null; amount: number; reason: string };
+export const MIN_BID_INCREASE = 10;
 export type Auction = {
   id: string; kind: 'property' | 'house' | 'hotel'; spaceId: number;
   eligible: string[]; passed: string[]; highBid: number; highBidderId: string | null;

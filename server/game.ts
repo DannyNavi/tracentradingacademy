@@ -123,6 +123,7 @@ function applyCardEffect(room: RoomState, player: PlayerPublic, card: GameCard) 
   if (card.d20Below !== undefined) {
     const roll = 1 + Math.floor(Math.random() * 20);
     const applies = roll < card.d20Below;
+    room.lastD20Roll = { playerId: player.id, value: roll, penaltyApplies: applies };
     pushLog(room, `${player.name} rolled ${roll} on the d20. ${applies ? 'The penalty applies.' : 'No penalty.'}`);
     if (!applies) return;
   }
@@ -429,6 +430,7 @@ export class RoomManager {
     room.ownership = {};
     room.trades = [];
     room.lastDice = null;
+    delete room.lastD20Roll;
     room.doublesCount = 0;
     room.winnerId = null;
     room.pending = { type: 'none' };

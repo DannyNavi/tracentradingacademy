@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { RoomManager } from './game.js';
-import { bankSupply, buildingLevel, buildProblem, liquidationValue, propertyGroup } from '../shared/rules.js';
+import { bankSupply, buildingLevel, buildProblem, liquidationValue, MIN_BID_INCREASE, propertyGroup } from '../shared/rules.js';
 
 test('seeded complete games preserve money, ownership, building, and card-deck invariants', () => {
   const originalRandom = Math.random;
@@ -37,7 +37,7 @@ test('seeded complete games preserve money, ownership, building, and card-deck i
           const bidderId = auction.eligible.find((id) => !auction.passed.includes(id) && id !== auction.highBidderId)!;
           const bidder = room.players.find((p) => p.id === bidderId)!;
           const cap = Math.min(Math.floor(bidder.money / 2), 250);
-          const amount = auction.highBid + 5;
+          const amount = auction.highBid + MIN_BID_INCREASE;
           manager.auctionAction('s'+bidderId,auction.id,amount <= cap && Math.random() < 0.5 ? amount : null,auction.buildTargets?.[bidderId]?.[0]);
         } else {
           const player = room.players[room.turnIndex], socket = 's'+player.id;

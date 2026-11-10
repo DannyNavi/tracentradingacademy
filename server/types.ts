@@ -115,6 +115,7 @@ export type RoomState = {
   ownership: Record<number, string>; // spaceId -> playerId
   lastDice: [number, number] | null;
   lastRollId?: number;
+  lastD20Roll?: { playerId: string; value: number; penaltyApplies: boolean };
   doublesCount: number;
   log: string[];
   pending: PendingAction;

@@ -3,7 +3,6 @@ import { Board } from '../components/Board';
 import { Carats } from '../components/Carats';
 import { TradingPanel } from '../components/TradingPanel';
 import { EconomyPanel } from '../components/EconomyPanel';
-import { D20Roll } from '../components/D20Roll';
 import { getCharacter } from '../lib/characters';
 import {
   buyProperty,
@@ -53,6 +52,9 @@ export function GameScreen({ room, selfId }: Props) {
     room.canRoll &&
     !me?.inJail;
   const choosingDie = canRollOnBoard && me?.dieChoice === 'ready';
+  const cardNeedsD20 = room.pending.type === 'card' && room.pending.card.d20Below !== undefined;
+  const lastD20 = room.lastD20Roll;
+  const lastD20Player = room.players.find((player) => player.id === lastD20?.playerId);
 
   return (
     <div className="game-page">
@@ -99,8 +101,6 @@ export function GameScreen({ room, selfId }: Props) {
 
         <TradingPanel room={room} selfId={selfId} />
         <EconomyPanel room={room} selfId={selfId} />
-        <D20Roll />
-
         <div className="actions">
           {choosingDie && (
             <div className="action-stack" role="group" aria-label="Choose one die face">
@@ -169,8 +169,15 @@ export function GameScreen({ room, selfId }: Props) {
               </p>
               <p>{room.pending.card.text}</p>
               <button className="btn primary" onClick={() => void run(resolveCard)}>
-                {room.pending.card.d20Below === undefined ? 'Continue' : 'Roll d20'}
+                {cardNeedsD20 ? 'Roll d20 for this card' : 'Continue'}
               </button>
+            </div>
+          )}
+
+          {!cardNeedsD20 && lastD20 && (
+            <div className="action-stack economy-notice" role="status">
+              <p><strong>Last card d20 result: {lastD20.value}</strong></p>
+              <p>{lastD20Player?.name ?? 'Player'} rolled. {lastD20.penaltyApplies ? 'Penalty applied.' : 'No penalty.'}</p>
             </div>
           )}
 

@@ -1,31 +1,39 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RoomState } from '../lib/types';
-import { buildingLevel, liquidationValue, type Auction } from '../../shared/rules';
+import { buildingLevel, liquidationValue, MIN_BID_INCREASE, type Auction } from '../../shared/rules';
 import { declareBankruptcy, resolveDebt, respondToAuction } from '../lib/socket';
 import { Carats } from './Carats';
 import { PropertyControls } from './PropertyControls';
 
 function AuctionPanel({ room, selfId, auction }: { room: RoomState; selfId: string; auction: Auction }) {
-  const [bid, setBid] = useState('1'), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [bid, setBid] = useState<string | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [target, setTarget] = useState(auction.buildTargets?.[selfId]?.[0] ?? auction.spaceId);
   const me = room.players.find((p) => p.id === selfId);
   const participating = auction.eligible.includes(selfId) && !auction.passed.includes(selfId);
   const highBidder = room.players.find((p) => p.id === auction.highBidderId);
+  const minimumBid = auction.highBid + MIN_BID_INCREASE;
+  const bidInput = bid ?? String(minimumBid);
+  const bidAmount = Number(bidInput);
   async function respond(amount: number | null) {
     setBusy(true); setError('');
-    try { const result = await respondToAuction(auction.id, amount, target); if (!result.ok) throw new Error(result.error); }
+    try {
+      const result = await respondToAuction(auction.id, amount, target);
+      if (!result.ok) throw new Error(result.error);
+      setBid(null);
+    }
     catch (err) { setError((err as Error).message); } finally { setBusy(false); }
   }
   return <section className="economy-notice" aria-label="Auction">
     <h3>{auction.kind === 'property' ? 'Property auction' : `Last ${auction.kind} auction`}</h3>
     <p>{auction.kind === 'property' ? room.content.properties.find((s) => s.id === auction.spaceId)?.name : `Bid for the bank’s final ${auction.kind}.`}</p>
     <p>Highest bid: <Carats amount={auction.highBid} />{highBidder ? ` · ${highBidder.name}` : ' · No bids yet'}</p>
-    {participating ? <form onSubmit={(event) => { event.preventDefault(); void respond(Number(bid)); }}>
+    {participating ? <form onSubmit={(event) => { event.preventDefault(); void respond(bidAmount); }}>
       {auction.kind !== 'property' && <label>Build on<select value={target} onChange={(event) => setTarget(Number(event.target.value))}>
         {auction.buildTargets?.[selfId]?.map((id) => <option key={id} value={id}>{room.content.properties.find((s) => s.id === id)?.name}</option>)}
       </select></label>}
-      <label>Your bid<input type="number" min={auction.highBid + 1} max={me?.money ?? 0} step={1} required value={bid} onChange={(event) => setBid(event.target.value)} /></label>
-      <div className="trade-buttons"><button className="btn primary" disabled={busy || !Number.isSafeInteger(Number(bid)) || Number(bid) <= auction.highBid || Number(bid) > (me?.money ?? 0)}>Place bid</button>
+      <p>Minimum bid: <Carats amount={minimumBid} /></p>
+      <label>Your bid<input type="number" min={minimumBid} max={me?.money ?? 0} step={1} required value={bidInput} onChange={(event) => setBid(event.target.value)} /></label>
+      <div className="trade-buttons"><button className="btn primary" disabled={busy || !Number.isSafeInteger(bidAmount) || bidAmount < minimumBid || bidAmount > (me?.money ?? 0)}>Place bid</button>
         <button className="btn ghost" type="button" disabled={busy || auction.highBidderId === selfId} onClick={() => void respond(null)}>Pass auction</button></div>
     </form> : <p className="muted">You are watching this auction.</p>}
     <p className="muted">Passing leaves this auction. It ends when every other bidder passes.</p>

@@ -11,6 +11,7 @@ export function PropertyControls({ room, space, selfId }: { room: RoomState; spa
   const level = buildingLevel(room, space.id), group = propertyGroup(room, space);
   const hasBuildings = group.some((s) => buildingLevel(room, s.id));
   const mortgaged = room.mortgaged?.[space.id];
+  const isMyTurn = room.players[room.turnIndex]?.id === me.id;
   const canSpend = !room.auction && !room.debts?.length && room.pending.type === 'none';
   const buildingAuction = Boolean(room.auction && room.auction.kind !== 'property');
   const buildError = buildProblem(room, me.id, space);
@@ -34,9 +35,10 @@ export function PropertyControls({ room, space, selfId }: { room: RoomState; spa
       {buildError && level < 5 && <p className="muted">{buildError}</p>}
     </>}
     <div className="trade-buttons">
-      {mortgaged ? <button className="btn primary" disabled={busy || !canSpend || me.money < repay} onClick={() => void act('unmortgage')}>Repay mortgage · <Carats amount={repay} /></button>
+      {mortgaged ? <button className="btn primary" disabled={busy || !isMyTurn || !canSpend || me.money < repay} onClick={() => void act('unmortgage')}>Repay mortgage · <Carats amount={repay} /></button>
         : <button className="btn ghost" disabled={busy || buildingAuction || Boolean(hasBuildings)} onClick={() => void act('mortgage')}>Mortgage · receive <Carats amount={mortgageValue(space)} /></button>}
     </div>
+    {mortgaged && !isMyTurn && <p className="muted">You can repay this mortgage on your turn.</p>}
     <p className="muted">Mortgaged properties collect no rent. Repayment includes 10% interest. Sell buildings evenly for half their purchase cost.</p>
     {error && <p className="error" role="alert">{error}</p>}
   </section>;
