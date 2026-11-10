@@ -3,6 +3,7 @@ import { Board } from '../components/Board';
 import { Carats } from '../components/Carats';
 import { TradingPanel } from '../components/TradingPanel';
 import { EconomyPanel } from '../components/EconomyPanel';
+import { D20Roll } from '../components/D20Roll';
 import { getCharacter } from '../lib/characters';
 import {
   buyProperty,
@@ -95,6 +96,7 @@ export function GameScreen({ room, selfId }: Props) {
 
         <TradingPanel room={room} selfId={selfId} />
         <EconomyPanel room={room} selfId={selfId} />
+        <D20Roll />
 
         <div className="actions">
           {room.phase === 'playing' && !room.auction && !room.debts?.length &&
