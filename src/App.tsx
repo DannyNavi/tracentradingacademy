@@ -18,6 +18,21 @@ import './App.css';
 
 type View = 'home' | 'lobby' | 'game' | 'preview';
 
+function PlayScreen({ room, selfId }: { room: RoomState; selfId: string }) {
+  const [sawStartingRound, setSawStartingRound] = useState(room.phase === 'starting');
+  const showFinalRoll = sawStartingRound && room.phase === 'playing';
+
+  useEffect(() => {
+    if (!showFinalRoll) return;
+    const timer = window.setTimeout(() => setSawStartingRound(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [showFinalRoll]);
+
+  return room.phase === 'starting' || showFinalRoll
+    ? <StartingRollScreen room={room} selfId={selfId} />
+    : <GameScreen room={room} selfId={selfId} />;
+}
+
 function pathIsPreview() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   return path === '/preview' || window.location.hash === '#preview';
@@ -141,7 +156,7 @@ export default function App() {
         />
       )}
       {view === 'lobby' && room && <LobbyScreen room={room} selfId={selfId} />}
-      {view === 'game' && room && (room.phase === 'starting' ? <StartingRollScreen room={room} selfId={selfId} /> : <GameScreen room={room} selfId={selfId} />)}
+      {view === 'game' && room && <PlayScreen key={room.code} room={room} selfId={selfId} />}
     </div>
   );
 }

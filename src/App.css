@@ -774,6 +774,7 @@ html[data-theme='dark'] .sidebar {
   position: absolute;
   inset: var(--cell);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-content: center;
   justify-items: center;
   text-align: center;
@@ -787,6 +788,25 @@ html[data-theme='dark'] .sidebar {
   margin-top: 0.35rem;
   min-width: 8.5rem;
   animation: rise 280ms ease;
+}
+
+.board-event {
+  width: min(100%, 26rem, calc(100vw - 2rem));
+  max-height: calc(var(--cell) * 5);
+  overflow: auto;
+  pointer-events: auto;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow-wrap: anywhere;
+}
+
+.board-event p {
+  margin: 0;
+}
+
+.board-event .fuji-card-art {
+  width: 48px;
+  height: 48px;
 }
 
 .board-center-sub {

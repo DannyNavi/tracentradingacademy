@@ -52,7 +52,10 @@ export function GameScreen({ room, selfId }: Props) {
     room.canRoll &&
     !me?.inJail;
   const choosingDie = canRollOnBoard && me?.dieChoice === 'ready';
-  const cardNeedsD20 = room.pending.type === 'card' && room.pending.card.d20Below !== undefined;
+  const pendingCard = room.pending.type === 'card' ? room.pending : null;
+  const cardNeedsD20 = pendingCard?.card.d20Below !== undefined;
+  const canEndTurn = room.phase === 'playing' && isMyTurn && !me?.bankrupt &&
+    !room.auction && !room.debts?.length && room.pending.type === 'none' && !room.canRoll;
   const lastD20 = room.lastD20Roll;
   const lastD20Player = room.players.find((player) => player.id === lastD20?.playerId);
 
@@ -112,16 +115,6 @@ export function GameScreen({ room, selfId }: Props) {
               ))}
             </div>
           )}
-          {room.phase === 'playing' && !room.auction && !room.debts?.length &&
-            isMyTurn &&
-            room.pending.type === 'none' &&
-            !room.canRoll &&
-            (!me?.inJail || !room.canRoll) && (
-              <button className="btn primary" onClick={() => void run(endTurn)}>
-                End turn
-              </button>
-            )}
-
           {isMyTurn && room.pending.type === 'buy_or_pass' && (
             <div className="action-stack">
               <p>
@@ -155,21 +148,6 @@ export function GameScreen({ room, selfId }: Props) {
               </p>
               <button className="btn primary" onClick={() => void run(payDue)}>
                 Pay
-              </button>
-            </div>
-          )}
-
-          {isMyTurn && room.pending.type === 'card' && (
-            <div className="action-stack card-reveal">
-              {room.pending.deck === 'chance' ? (
-                <img className="fuji-card-art" src="/fuji-hat.png" alt="" />
-              ) : null}
-              <p className="eyebrow">
-                {room.pending.deck === 'chance' ? "Fuji's Hat" : 'Raffle Ticket'}
-              </p>
-              <p>{room.pending.card.text}</p>
-              <button className="btn primary" onClick={() => void run(resolveCard)}>
-                {cardNeedsD20 ? 'Roll d20 for this card' : 'Continue'}
               </button>
             </div>
           )}
@@ -225,6 +203,29 @@ export function GameScreen({ room, selfId }: Props) {
           canRoll={canRollOnBoard && !choosingDie}
           diceIdleMessage={choosingDie ? 'Choose a die face' : isMyTurn ? 'Roll when ready' : current ? `${current.name}'s turn` : 'Waiting for turn'}
           onRoll={() => void run(() => rollDice())}
+          centerActions={
+            <>
+              {pendingCard && (
+                <section className="action-stack card-reveal board-event" key={pendingCard.card.id} aria-label="Event card">
+                  {pendingCard.deck === 'chance' && <img className="fuji-card-art" src="/fuji-hat.png" alt="" />}
+                  <p className="eyebrow">{pendingCard.deck === 'chance' ? "Fuji's Hat" : 'Raffle Ticket'}</p>
+                  <p role="status">{pendingCard.card.text}</p>
+                  {isMyTurn ? (
+                    <button className="btn primary" onClick={() => void run(resolveCard)}>
+                      {cardNeedsD20 ? 'Roll d20 for this card' : 'Continue'}
+                    </button>
+                  ) : (
+                    <p className="muted">Waiting for {current?.name} to resolve the card.</p>
+                  )}
+                </section>
+              )}
+              {canEndTurn && (
+                <button type="button" className="btn primary board-roll-btn" onClick={() => void run(endTurn)}>
+                  End turn
+                </button>
+              )}
+            </>
+          }
         />
       </div>
     </div>

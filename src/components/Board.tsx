@@ -1,5 +1,5 @@
 import { AnimatedTokens } from './AnimatedTokens';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { TileDetails } from './TileDetails';
 import type { BoardSpace, PlayerPublic, RoomState } from '../lib/types';
 import { Carats } from './Carats';
@@ -11,6 +11,7 @@ type Props = {
   canRoll?: boolean;
   diceIdleMessage?: string;
   onRoll?: () => void;
+  centerActions?: ReactNode;
   /** Hide lobby code / roll UI for static map preview */
   preview?: boolean;
 };
@@ -180,7 +181,7 @@ function BoardCell({
  * bottom ← left ↑ top → right ↓ back to GO.
  * CSS grids fill left→right / top→bottom.
  */
-export function Board({ room, selfId, canRoll = false, diceIdleMessage = 'Waiting for turn', onRoll, preview = false }: Props) {
+export function Board({ room, selfId, canRoll = false, diceIdleMessage = 'Waiting for turn', onRoll, centerActions, preview = false }: Props) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const spaces = room.content.properties;
   const selectedSpace = spaces.find((space) => space.id === selectedId);
@@ -210,6 +211,7 @@ export function Board({ room, selfId, canRoll = false, diceIdleMessage = 'Waitin
             Roll dice
           </button>
         ) : null}
+        {centerActions}
       </div>
 
       <div className="edge bottom">
