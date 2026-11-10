@@ -16,6 +16,14 @@ type Props = {
 };
 
 function cellArt(space: BoardSpace): { src: string; fit: 'cover' | 'contain' } | null {
+  if (space.kind === 'property') {
+    const gameArt: Record<string, string> = {
+      Minecraft: '/minecraft.jpg',
+      Overwatch: '/overwatch.jpg',
+      'Dungeons and Dragons': '/dungeons-and-dragons.jpg',
+    };
+    if (gameArt[space.name]) return { src: gameArt[space.name], fit: 'cover' };
+  }
   if (space.kind === 'jail' || space.name === 'Infirmary') {
     return { src: '/infirmary.png', fit: 'cover' };
   }
