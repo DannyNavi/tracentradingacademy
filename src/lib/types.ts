@@ -3,6 +3,7 @@ import type { Trade } from '../../shared/trades.js';
 
 export type CardEffect =
   | { type: 'money'; amount: number }
+  | { type: 'sports_bet' }
   | { type: 'money_all'; amount: number }
   | { type: 'carat_bonus'; percent: number; turns: number }
   | { type: 'move'; position: number; rentFree?: boolean }
@@ -110,7 +111,7 @@ export type RoomState = {
   ownership: Record<number, string>;
   lastDice: [number, number] | null;
   lastRollId?: number;
-  lastD20Roll?: { playerId: string; value: number; penaltyApplies: boolean };
+  lastD20Roll?: { playerId: string; value: number; penaltyApplies: boolean; wager?: number; payout?: number };
   doublesCount: number;
   log: string[];
   pending: PendingAction;

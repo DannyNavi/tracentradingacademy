@@ -76,8 +76,8 @@ export async function payDue() {
   return emit('game:pay');
 }
 
-export async function resolveCard() {
-  return emit('game:card');
+export async function resolveCard(wager?: number) {
+  return emit('game:card', wager === undefined ? undefined : { wager });
 }
 
 export async function jailAction(action: 'pay' | 'card' | 'roll') {

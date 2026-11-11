@@ -44,7 +44,8 @@ test('seeded complete games preserve money, ownership, building, and card-deck i
           if (room.pending.type === 'buy_or_pass') {
             if (player.money >= room.pending.price + 100) manager.buy(socket); else manager.pass(socket);
           } else if (room.pending.type === 'pay_rent' || room.pending.type === 'pay_tax') manager.acknowledgePay(socket);
-          else if (room.pending.type === 'card') manager.acknowledgeCard(socket);
+          else if (room.pending.type === 'card') manager.acknowledgeCard(socket,
+            room.pending.card.effect.type === 'sports_bet' ? Math.min(50, player.money) : undefined);
           else if (player.inJail && room.canRoll) manager.jailAction(socket,player.getOutCards ? 'card' : player.money >= 100 ? 'pay' : 'roll');
           else if (room.pending.type === 'jail_choice') manager.jailAction(socket,'roll');
           else if (room.canRoll) manager.rollDice(socket, player.dieChoice === 'ready' ? 3 : undefined);
@@ -73,8 +74,8 @@ test('seeded complete games preserve money, ownership, building, and card-deck i
           const available = room.cardDecks![deck];
           const held = Object.values(room.heldCards ?? {}).flat().filter((c) => c.deck === deck).map((c) => c.id);
           const pending = room.pending.type === 'card' && room.pending.deck === deck ? [room.pending.card.id] : [];
-          assert.equal(new Set([...available,...held,...pending]).size,16, 'each card exists exactly once');
-          assert.equal(available.length+held.length+pending.length,16);
+          assert.equal(new Set([...available,...held,...pending]).size, room.content[deck].length, 'each card exists exactly once');
+          assert.equal(available.length+held.length+pending.length, room.content[deck].length);
         }
       }
       assert.equal(room.phase,'finished',`seed ${seed} should finish without a stalled game phase`);

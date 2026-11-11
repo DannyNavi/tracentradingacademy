@@ -20,6 +20,30 @@ type Props = {
   selfId: string;
 };
 
+function WagerForm({ money, onWager }: { money: number; onWager: (amount: number) => Promise<void> }) {
+  const [wager, setWager] = useState(String(Math.min(100, money)));
+  const [busy, setBusy] = useState(false);
+  const amount = Number(wager);
+
+  return (
+    <form className="action-stack" onSubmit={async (event) => {
+      event.preventDefault();
+      if (busy) return;
+      setBusy(true);
+      try { await onWager(amount); } finally { setBusy(false); }
+    }}>
+      <label>
+        Your wager
+        <input type="number" min={0} max={money} step={1} required value={wager} onChange={(event) => setWager(event.target.value)} />
+      </label>
+      <p className="muted">Available <Carats amount={money} />. Wager 0 to sit this one out.</p>
+      <button className="btn primary" disabled={busy || wager === '' || !Number.isSafeInteger(amount) || amount < 0 || amount > money}>
+        {busy ? 'Rolling…' : 'Confirm wager and roll'}
+      </button>
+    </form>
+  );
+}
+
 export function GameScreen({ room, selfId }: Props) {
   const me = room.players.find((p) => p.id === selfId);
   const current = room.players[room.turnIndex];
@@ -54,7 +78,7 @@ export function GameScreen({ room, selfId }: Props) {
     !me?.inJail;
   const choosingDie = canRollOnBoard && me?.dieChoice === 'ready';
   const pendingCard = room.pending.type === 'card' ? room.pending : null;
-  const cardNeedsD20 = pendingCard?.card.d20Below !== undefined;
+  const cardNeedsD20 = pendingCard?.card.d20Below !== undefined || pendingCard?.card.effect.type === 'sports_bet';
   const canEndTurn = room.phase === 'playing' && isMyTurn && !me?.bankrupt &&
     !room.auction && !room.debts?.length && room.pending.type === 'none' && !room.canRoll;
   const lastD20 = room.lastD20Roll;
@@ -156,7 +180,9 @@ export function GameScreen({ room, selfId }: Props) {
           {!cardNeedsD20 && lastD20 && (
             <div className="action-stack economy-notice" role="status">
               <p><strong>Last card d20 result: {lastD20.value}</strong></p>
-              <p>{lastD20Player?.name ?? 'Player'} rolled. {lastD20.penaltyApplies ? 'Penalty applied.' : 'No penalty.'}</p>
+              <p>{lastD20Player?.name ?? 'Player'} rolled. {lastD20.wager !== undefined
+                ? <>Wager <Carats amount={lastD20.wager} /> · Payout <Carats amount={lastD20.payout ?? 0} /></>
+                : lastD20.penaltyApplies ? 'Penalty applied.' : 'No penalty.'}</p>
             </div>
           )}
 
@@ -217,13 +243,16 @@ export function GameScreen({ room, selfId }: Props) {
                   {pendingCard.deck === 'chance' && <img className="fuji-card-art" src="/fuji-hat.png" alt="" />}
                   <p className="eyebrow">{pendingCard.deck === 'chance' ? "Fuji's Hat" : 'Raffle Ticket'}</p>
                   <p role="status">{pendingCard.card.text}</p>
-                  {isMyTurn ? (
-                    <button className="btn primary" onClick={() => void run(resolveCard)}>
+                  {isMyTurn ? pendingCard.card.effect.type === 'sports_bet' ? (
+                    <WagerForm money={me?.money ?? 0} onWager={(amount) => run(() => resolveCard(amount))} />
+                  ) : (
+                    <button className="btn primary" onClick={() => void run(() => resolveCard())}>
                       {cardNeedsD20 ? 'Roll d20 for this card' : 'Continue'}
                     </button>
                   ) : (
                     <p className="muted">Waiting for {current?.name} to resolve the card.</p>
                   )}
+                  {isMyTurn && error && <p className="error" role="alert">{error}</p>}
                 </section>
               )}
               {canEndTurn && (

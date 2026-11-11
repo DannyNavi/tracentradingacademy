@@ -227,9 +227,13 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('game:card', (ack?: (r: unknown) => void) => {
+  socket.on('game:card', (
+    input?: { wager: number } | ((r: unknown) => void),
+    response?: (r: unknown) => void,
+  ) => {
+    const ack = typeof input === 'function' ? input : response;
     try {
-      const room = rooms.acknowledgeCard(socket.id);
+      const room = rooms.acknowledgeCard(socket.id, typeof input === 'function' ? undefined : input?.wager);
       ack?.({ ok: true, room: publicRoom(room) });
       emitRoom(room.code);
     } catch (e) {

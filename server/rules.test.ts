@@ -278,6 +278,38 @@ test('repair cards charge each house and hotel once; player-to-player cards use 
   playCard({ type: 'pay_each', amount:50 }); assert.deepEqual(room.players.map((p) => p.money), [1245,1540,1540]);
 });
 
+test('sports betting settles each d20 boundary using the chosen stake exactly once', () => {
+  for (const [roll, multiplier] of [[1, 0], [10, 0], [11, 2], [18, 2], [19, 4], [20, 4]]) {
+    const { manager, room } = setup();
+    const card = room.content.community.find((card) => card.effect.type === 'sports_bet')!;
+    room.pending = { type: 'card', deck: 'community', card };
+    withDice([(roll - 0.5) / 20], () => manager.acknowledgeCard('sa', 100));
+    assert.equal(room.players[0].money, 1400 + multiplier * 100);
+    assert.deepEqual(room.lastD20Roll, {
+      playerId: 'a', value: roll, penaltyApplies: multiplier === 0, wager: 100, payout: multiplier * 100,
+    });
+    assert.throws(() => manager.acknowledgeCard('sa', 100), /No card pending/);
+  }
+});
+
+test('invalid sports wagers preserve the pending card and zero Carats is a valid wager', () => {
+  const { manager, room } = setup();
+  initializeDecks(room);
+  const card = room.content.community.find((card) => card.effect.type === 'sports_bet')!;
+  room.cardDecks!.community = room.cardDecks!.community.filter((id) => id !== card.id);
+  room.pending = { type: 'card', deck: 'community', card };
+  for (const wager of [undefined, -1, 0.5, NaN, 1501]) {
+    assert.throws(() => manager.acknowledgeCard('sa', wager), /whole wager/);
+    assert.equal(room.pending.type, 'card');
+    assert.equal(room.players[0].money, 1500);
+    assert.equal(room.cardDecks!.community.includes(card.id), false);
+  }
+  room.players[0].money = 0;
+  withDice([0.99], () => manager.acknowledgeCard('sa', 0));
+  assert.equal(room.players[0].money, 0);
+  assert.equal(room.cardDecks!.community.at(-1), card.id);
+});
+
 test('Sweep Tosho boosts incoming payments, mortgages, trades, and rewards for three turns', () => {
   const { manager, room, own } = setup();
   const [alice, bob, cara] = room.players;

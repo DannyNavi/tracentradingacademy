@@ -97,6 +97,7 @@ export const DEFAULT_COMMUNITY: GameCard[] = [
   { id: 'cm14', text: 'You pull an RJ and MLB Maru in 200 pulls. Gain 900 Carats.', effect: { type: 'money', amount: 900 } },
   { id: 'cm15', text: 'You get placed in a six-Front Group A Final. Give 30 Carats to each other player.', effect: { type: 'pay_each', amount: 30 } },
   { id: 'cm16', text: 'Three cheers for trainer! Everyone gets 600 Carats.', effect: { type: 'money_all', amount: 600 } },
+  { id: 'cm17', text: 'You and Kevin decide to do some sports betting. Select how many Carats you want to wager.', effect: { type: 'sports_bet' } },
 ];
 
 export function defaultContent(): GameContent {

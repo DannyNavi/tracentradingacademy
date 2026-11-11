@@ -1,6 +1,6 @@
 import { drawFromDeck, initializeDecks, movePasses, returnCard } from './cards.js';
 import { auctionAction, charge, creditCarats, liquidatePlayer, manageProperty, settleDebt, startPropertyAuction } from './economy.js';
-import { liquidationValue, type PropertyAction } from '../shared/rules.js';
+import { caratGain, liquidationValue, type PropertyAction } from '../shared/rules.js';
 import { calculateRent } from '../src/lib/rent.js';
 import { proposeTrade, respondToTrade } from './trading.js';
 import type { TradeProposal, TradeResponse } from '../shared/trades.js';
@@ -116,7 +116,7 @@ function sendToJail(room: RoomState, player: PlayerPublic) {
   pushLog(room, `${player.name} is sent to the Infirmary.`);
 }
 
-function applyCardEffect(room: RoomState, player: PlayerPublic, card: GameCard) {
+function applyCardEffect(room: RoomState, player: PlayerPublic, card: GameCard, wager = 0) {
   const effect = card.effect;
   room.pending = { type: 'none' };
   pushLog(room, player.name + ': ' + card.text);
@@ -128,6 +128,17 @@ function applyCardEffect(room: RoomState, player: PlayerPublic, card: GameCard) 
     if (!applies) return;
   }
   switch (effect.type) {
+    case 'sports_bet': {
+      const roll = 1 + Math.floor(Math.random() * 20);
+      const multiplier = roll <= 10 ? 0 : roll <= 18 ? 2 : 4;
+      const basePayout = wager * multiplier;
+      const payout = caratGain(player, basePayout);
+      player.money -= wager;
+      creditCarats(room, player, basePayout);
+      room.lastD20Roll = { playerId: player.id, value: roll, penaltyApplies: multiplier === 0, wager, payout };
+      pushLog(room, `${player.name} wagered ${wager} Carats and rolled ${roll} on the d20. Payout: ${payout} Carats.`);
+      break;
+    }
     case 'money':
       if (effect.amount >= 0) creditCarats(room, player, effect.amount);
       else charge(room, player, -effect.amount, null, card.text);
@@ -609,16 +620,25 @@ export class RoomManager {
     return room;
   }
 
-  acknowledgeCard(socketId: string): RoomState {
+  acknowledgeCard(socketId: string, wager?: number): RoomState {
     const room = this.requireTurn(socketId);
     if (room.pending.type !== 'card') throw new Error('No card pending');
     const player = currentPlayer(room);
     const { card, deck } = room.pending;
+    if (card.effect.type === 'sports_bet') {
+      if (wager === undefined || !Number.isSafeInteger(wager) || wager < 0 || wager > player.money) {
+        throw new Error('Choose a whole wager from 0 up to your available Carats.');
+      }
+      if (!Number.isSafeInteger(wager * 4) ||
+        !Number.isSafeInteger(player.money - wager + caratGain(player, wager * 4))) {
+        throw new Error('Choose a smaller wager.');
+      }
+    }
     if (card.effect.type === 'get_out_of_jail') {
       room.heldCards ??= {}; room.heldCards[player.id] ??= [];
       room.heldCards[player.id].push({ deck, id: card.id });
     } else returnCard(room, deck, card.id);
-    applyCardEffect(room, player, card);
+    applyCardEffect(room, player, card, wager);
     if ((room.pending as PendingAction).type === 'none' && room.phase === 'playing' && !player.inJail) {
       this.afterAction(room);
     }
