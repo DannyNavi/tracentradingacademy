@@ -8,6 +8,7 @@ import {
   buyProperty,
   endTurn,
   jailAction,
+  leaveFinishedGame,
   passProperty,
   payDue,
   resolveCard,
@@ -53,6 +54,7 @@ export function GameScreen({ room, selfId }: Props) {
   const rentOwnerId = room.pending.type === 'pay_rent' ? room.pending.toPlayerId : null;
   const rentOwner = room.players.find((player) => player.id === rentOwnerId);
   const [error, setError] = useState('');
+  const [leaving, setLeaving] = useState(false);
 
   async function run(fn: () => Promise<{ ok: boolean; error?: string }>) {
     setError('');
@@ -236,6 +238,12 @@ export function GameScreen({ room, selfId }: Props) {
                 <p className="eyebrow">Victory</p>
                 {winnerCharacter && <img src={winnerCharacter.image} alt={winnerCharacter.name} />}
                 <h2>{winner.name} wins!</h2>
+                <button type="button" className="btn primary" disabled={leaving} onClick={async () => {
+                  setLeaving(true);
+                  try { await run(leaveFinishedGame); } finally { setLeaving(false); }
+                }}>
+                  {leaving ? 'Leaving…' : 'Leave game'}
+                </button>
               </section>
             ) : <>
               {pendingCard && (

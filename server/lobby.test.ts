@@ -50,3 +50,21 @@ test('kick and leave are limited to the lobby before the game starts', () => {
   assert.throws(() => manager.leaveLobby('sb'), /game has started/);
   assert.equal(room.players.length, 2);
 });
+
+test('players can leave a finished game while the winner stays visible to the others', () => {
+  const manager = new RoomManager();
+  const room = manager.createRoom('a', 'sa', 'Alice');
+  manager.joinRoom(room.code, 'b', 'sb', 'Bob');
+  assert.throws(() => manager.leaveFinishedGame('sa'), /game has finished/);
+  room.phase = 'finished';
+  room.winnerId = 'a';
+  manager.leaveFinishedGame('sa');
+  assert.equal(manager.getRoomForSocket('sa'), undefined);
+  assert.equal(room.players.find((player) => player.id === room.winnerId)?.name, 'Alice');
+  assert.equal(room.players[0].connected, false);
+  assert.equal(manager.rooms.has(room.code), true);
+  assert.equal(room.turnIndex, 0);
+  manager.leaveFinishedGame('sb');
+  assert.equal(manager.getRoomForSocket('sb'), undefined);
+  assert.equal(manager.rooms.has(room.code), false);
+});

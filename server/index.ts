@@ -143,6 +143,17 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('game:leave', (ack?: (r: unknown) => void) => {
+    try {
+      const { room, playerId } = rooms.leaveFinishedGame(socket.id);
+      notifyLobbyDeparture(room.code, playerId, 'left');
+      ack?.({ ok: true });
+      emitRoom(room.code);
+    } catch (e) {
+      ack?.({ ok: false, error: (e as Error).message });
+    }
+  });
+
   socket.on('lobby:open', (ack?: (r: unknown) => void) => {
     try {
       const room = rooms.openLobby(socket.id);

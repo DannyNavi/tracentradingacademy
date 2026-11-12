@@ -410,6 +410,23 @@ export class RoomManager {
     return { room, playerId };
   }
 
+  leaveFinishedGame(socketId: string): { room: RoomState; playerId: string } {
+    const { room, playerId } = this.requirePlayer(socketId);
+    if (room.phase !== 'finished') throw new Error('Wait until the game has finished before leaving.');
+    const player = room.players.find((p) => p.id === playerId)!;
+    player.connected = false;
+    for (const [sid, binding] of this.socketBindings) {
+      if (binding.roomCode === room.code && binding.playerId === playerId) this.socketBindings.delete(sid);
+    }
+    pushLog(room, `${player.name} left the finished game.`);
+    if (room.players.every((p) => !p.connected)) {
+      this.clearHostTransfer(room.code);
+      this.clearRoomCleanup(room.code);
+      this.rooms.delete(room.code);
+    }
+    return { room, playerId };
+  }
+
   private removeLobbyPlayer(room: RoomState, playerId: string) {
     room.players = room.players.filter((p) => p.id !== playerId);
     for (const [sid, binding] of this.socketBindings) {

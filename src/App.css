@@ -843,6 +843,7 @@ html[data-theme='dark'] .sidebar {
   border: 2px solid var(--gold);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  pointer-events: auto;
 }
 
 .board-victory img {
