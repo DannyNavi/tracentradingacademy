@@ -50,6 +50,7 @@ export async function rejoinLobby(code: string, playerId: string) {
 export const kickLobbyPlayer = (playerId: string) => emit('lobby:kick', { playerId });
 export const leaveLobby = () => emit('lobby:leave');
 export const leaveFinishedGame = () => emit('game:leave');
+export const forceEndGame = () => emit('game:forceEnd');
 
 export async function selectCharacter(characterId: string) {
   return emit('lobby:selectCharacter', { characterId });

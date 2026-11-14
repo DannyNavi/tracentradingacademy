@@ -1,24 +1,39 @@
 import type { Deck } from '../shared/rules.js';
 import type { GameCard, RoomState } from './types.js';
 
+function shuffle(ids: string[]) {
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+}
+
 export function initializeDecks(room: RoomState) {
   room.cardDecks = { chance: [], community: [] };
+  room.deckCardsRemaining = { chance: 0, community: 0 };
   for (const deck of ['chance', 'community'] as const) {
     const held = new Set(Object.values(room.heldCards ?? {}).flat().filter((c) => c.deck === deck).map((c) => c.id));
     const ids = room.content[deck].map((card) => card.id).filter((id) => !held.has(id));
-    for (let i = ids.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [ids[i], ids[j]] = [ids[j], ids[i]];
-    }
+    shuffle(ids);
     room.cardDecks[deck] = ids;
+    room.deckCardsRemaining[deck] = ids.length;
   }
 }
 
 export function drawFromDeck(room: RoomState, deck: Deck): GameCard {
   if (!room.cardDecks) initializeDecks(room);
+  room.deckCardsRemaining ??= {
+    chance: room.cardDecks!.chance.length,
+    community: room.cardDecks!.community.length,
+  };
+  if (room.deckCardsRemaining[deck] <= 0) {
+    shuffle(room.cardDecks![deck]);
+    room.deckCardsRemaining[deck] = room.cardDecks![deck].length;
+  }
   const id = room.cardDecks![deck].shift();
   const card = room.content[deck].find((c) => c.id === id);
   if (!card) throw new Error('This card deck has no available cards.');
+  room.deckCardsRemaining[deck] -= 1;
   return card;
 }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DiceRoll } from '../components/DiceRoll';
+import { EndGameButton } from '../components/EndGameButton';
 import { getCharacter } from '../lib/characters';
 import { rollStartingDice } from '../lib/socket';
 import type { RoomState } from '../lib/types';
@@ -43,6 +44,7 @@ export function StartingRollScreen({ room, selfId }: { room: RoomState; selfId: 
       {eligible && !alreadyRolled ? <button className="btn primary" onClick={() => void roll()} disabled={busy}>{busy ? 'Rolling…' : roundNumber > 1 ? 'Reroll for first turn' : 'Roll for first turn'}</button>
         : <p role="status">{alreadyRolled ? 'Your roll is in. ' : ''}Waiting for {waiting.map((id) => room.players.find((p) => p.id === id)?.name).join(', ')}.</p>}
       {error && <p className="error" role="alert">{error}</p>}
+      {room.hostId === selfId && <EndGameButton />}
     </div>}
     {(room.startRolls?.length ?? 0) > 0 && <details className="starting-history"><summary>Starting roll history</summary><ul>{room.startRolls!.map((entry, index) => <li key={index}>
       Round {entry.round ?? 1} · {room.players.find((p) => p.id === entry.playerId)?.name}: {entry.dice.join(' + ')} = {entry.dice[0] + entry.dice[1]}

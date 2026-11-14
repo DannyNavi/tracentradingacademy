@@ -3,6 +3,7 @@ import { Board } from '../components/Board';
 import { Carats } from '../components/Carats';
 import { TradingPanel } from '../components/TradingPanel';
 import { EconomyPanel } from '../components/EconomyPanel';
+import { EndGameButton } from '../components/EndGameButton';
 import { getCharacter } from '../lib/characters';
 import {
   buyProperty,
@@ -92,7 +93,7 @@ export function GameScreen({ room, selfId }: Props) {
         <p className="brand-sm">Tracen Trading Academy</p>
         <h2 className="turn-line">
           {room.phase === 'finished'
-            ? `${winner?.name ?? 'Someone'} wins!`
+            ? winner ? `${winner.name} wins!` : 'Game ended'
             : room.auction && current?.bankrupt
               ? 'Bankruptcy auction'
               : isMyTurn
@@ -131,6 +132,7 @@ export function GameScreen({ room, selfId }: Props) {
 
         <TradingPanel room={room} selfId={selfId} />
         <EconomyPanel room={room} selfId={selfId} />
+        {room.phase === 'playing' && room.hostId === selfId && <EndGameButton />}
         <div className="actions">
           {choosingDie && (
             <div className="action-stack" role="group" aria-label="Choose one die face">
@@ -233,11 +235,12 @@ export function GameScreen({ room, selfId }: Props) {
           diceIdleMessage={choosingDie ? 'Choose a die face' : isMyTurn ? 'Roll when ready' : current ? `${current.name}'s turn` : 'Waiting for turn'}
           onRoll={() => void run(() => rollDice())}
           centerActions={
-            room.phase === 'finished' && winner ? (
+            room.phase === 'finished' ? (
               <section className="board-victory" role="status">
-                <p className="eyebrow">Victory</p>
+                <p className="eyebrow">{winner ? 'Victory' : 'Game over'}</p>
                 {winnerCharacter && <img src={winnerCharacter.image} alt={winnerCharacter.name} />}
-                <h2>{winner.name} wins!</h2>
+                <h2>{winner ? `${winner.name} wins!` : 'Game ended'}</h2>
+                {!winner && <p>The host ended the game early.</p>}
                 <button type="button" className="btn primary" disabled={leaving} onClick={async () => {
                   setLeaving(true);
                   try { await run(leaveFinishedGame); } finally { setLeaving(false); }

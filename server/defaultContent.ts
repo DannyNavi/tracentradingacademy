@@ -94,7 +94,7 @@ export const DEFAULT_COMMUNITY: GameCard[] = [
   { id: 'cm11', text: 'Sweep Tosho casts a magical Carat-producing spell. Gain 20% more Carats for the next 3 turns.', effect: { type: 'carat_bonus', percent: 20, turns: 3 } },
   { id: 'cm12', text: 'You start independent training and forget to set the agenda. Lose 10 Carats.', effect: { type: 'money', amount: -10 } },
   { id: 'cm13', text: 'You pulled for Throne and it had a one-CM shelf life. Lose 300 Carats.', effect: { type: 'money', amount: -300 } },
-  { id: 'cm14', text: 'You pull an RJ and MLB Maru in 200 pulls. Gain 900 Carats.', effect: { type: 'money', amount: 900 } },
+  { id: 'cm14', text: 'You pull an RJ and MLB Maru in 200 pulls. Gain 600 Carats.', effect: { type: 'money', amount: 600 } },
   { id: 'cm15', text: 'You get placed in a six-Front Group A Final. Give 30 Carats to each other player.', effect: { type: 'pay_each', amount: 30 } },
   { id: 'cm16', text: 'Three cheers for trainer! Everyone gets 600 Carats.', effect: { type: 'money_all', amount: 600 } },
   { id: 'cm17', text: 'You and Kevin decide to do some sports betting. Select how many Carats you want to wager.', effect: { type: 'sports_bet' } },

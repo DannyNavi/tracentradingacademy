@@ -2,6 +2,31 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { RoomManager } from './game.js';
 
+test('only the host can force end the game and players can leave afterward', () => {
+  const manager = new RoomManager();
+  const room = manager.createRoom('a', 'sa', 'Alice');
+  manager.joinRoom(room.code, 'b', 'sb', 'Bob');
+  assert.throws(() => manager.forceEndGame('sa'), /no active game/);
+  room.phase = 'playing';
+  room.pending = { type: 'pay_tax', amount: 100 };
+  room.canRoll = true;
+  assert.throws(() => manager.forceEndGame('sb'), /Only the host/);
+  assert.equal(room.phase, 'playing');
+  manager.forceEndGame('sa');
+  assert.equal(room.phase, 'finished');
+  assert.equal(room.winnerId, null);
+  assert.equal(room.canRoll, false);
+  assert.equal(room.pending.type, 'none');
+  assert.equal(room.auction, null);
+  assert.deepEqual(room.auctionQueue, []);
+  assert.deepEqual(room.debts, []);
+  assert.throws(() => manager.rollDice('sa'), /not in progress/);
+  assert.throws(() => manager.forceEndGame('sa'), /no active game/);
+  manager.leaveFinishedGame('sa');
+  manager.leaveFinishedGame('sb');
+  assert.equal(manager.rooms.has(room.code), false);
+});
+
 test('only the host can kick another player and that player cannot rejoin the lobby', () => {
   const manager = new RoomManager();
   const room = manager.createRoom('a', 'sa', 'Alice');

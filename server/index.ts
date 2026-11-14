@@ -31,7 +31,7 @@ app.get('/api/default-content', (_req, res) => {
 
 const rooms = new RoomManager();
 
-function publicRoom(room: ReturnType<RoomManager['createRoom']>) { return { ...room, cardDecks: undefined }; }
+function publicRoom(room: ReturnType<RoomManager['createRoom']>) { return { ...room, cardDecks: undefined, deckCardsRemaining: undefined }; }
 
 function emitRoom(code: string) {
   const room = rooms.rooms.get(code);
@@ -147,6 +147,16 @@ io.on('connection', (socket) => {
     try {
       const { room, playerId } = rooms.leaveFinishedGame(socket.id);
       notifyLobbyDeparture(room.code, playerId, 'left');
+      ack?.({ ok: true });
+      emitRoom(room.code);
+    } catch (e) {
+      ack?.({ ok: false, error: (e as Error).message });
+    }
+  });
+
+  socket.on('game:forceEnd', (ack?: (r: unknown) => void) => {
+    try {
+      const room = rooms.forceEndGame(socket.id);
       ack?.({ ok: true });
       emitRoom(room.code);
     } catch (e) {

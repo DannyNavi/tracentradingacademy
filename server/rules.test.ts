@@ -2,12 +2,35 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { RoomManager } from './game.js';
 import { charge, startPropertyAuction } from './economy.js';
-import { drawFromDeck, initializeDecks } from './cards.js';
+import { drawFromDeck, initializeDecks, returnCard } from './cards.js';
 import { bankSupply, buildingLevel } from '../shared/rules.js';
 import { calculateRent } from '../src/lib/rent.js';
 import type { CardEffect, GameCard } from './types.js';
 
 const infirmaryPass: GameCard = { id: 'pass', text: 'Get out of Infirmary free.', effect: { type: 'get_out_of_jail' } };
+
+test('each deck reshuffles after its complete cycle without drawing held cards', () => {
+  for (const deck of ['chance', 'community'] as const) {
+    const { room } = setup();
+    room.content[deck].push(infirmaryPass);
+    room.heldCards = { a: [{ deck, id: infirmaryPass.id }] };
+    initializeDecks(room);
+    const order = [...room.cardDecks![deck]];
+    for (const expected of order) {
+      assert.equal(drawFromDeck(room, deck).id, expected);
+      returnCard(room, deck, expected);
+    }
+    assert.equal(room.deckCardsRemaining![deck], 0);
+    withDice([0], () => {
+      const card = drawFromDeck(room, deck);
+      assert.equal(card.id, order[1]);
+      returnCard(room, deck, card.id);
+    });
+    assert.equal(room.deckCardsRemaining![deck], order.length - 1);
+    assert.equal(room.cardDecks![deck].includes(infirmaryPass.id), false);
+    assert.equal(new Set(room.cardDecks![deck]).size, order.length);
+  }
+});
 
 function setup() {
   const manager = new RoomManager();
@@ -255,7 +278,7 @@ test('third failed jail roll waits for its fine to be funded before movement res
   assert.equal(room.pending.type, 'buy_or_pass');
 });
 
-test('shuffled cards cycle in order and held free-pass cards remain out of circulation', () => {
+test('cards keep their order within a cycle and held free-pass cards remain out of circulation', () => {
   const { manager, room } = setup();
   const card = infirmaryPass;
   room.content.community.push(card);

@@ -105,6 +105,7 @@ export type RoomState = {
   startingRound?: { number: number; eligibleIds: string[]; rolls: Record<string, [number, number]> };
   startRolls?: { playerId: string; dice: [number, number]; round?: number }[];
   cardDecks?: Record<Deck, string[]>;
+  deckCardsRemaining?: Record<Deck, number>;
   heldCards?: Record<string, HeldCard[]>;
   trades?: Trade[];
   code: string;

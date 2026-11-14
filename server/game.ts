@@ -427,6 +427,25 @@ export class RoomManager {
     return { room, playerId };
   }
 
+  forceEndGame(socketId: string): RoomState {
+    const room = this.requireHost(socketId);
+    if (room.phase !== 'starting' && room.phase !== 'playing') throw new Error('There is no active game to end.');
+    if (room.pending.type === 'card') returnCard(room, room.pending.deck, room.pending.card.id);
+    room.phase = 'finished';
+    room.winnerId = null;
+    room.canRoll = false;
+    room.extraRollEligible = false;
+    room.pending = { type: 'none' };
+    room.auction = null;
+    room.auctionQueue = [];
+    room.debts = [];
+    room.debtResume = undefined;
+    room.auctionResumeCanRoll = undefined;
+    room.startingRound = undefined;
+    pushLog(room, 'The host ended the game early.');
+    return room;
+  }
+
   private removeLobbyPlayer(room: RoomState, playerId: string) {
     room.players = room.players.filter((p) => p.id !== playerId);
     for (const [sid, binding] of this.socketBindings) {
@@ -582,7 +601,7 @@ export class RoomManager {
     else room.doublesCount = 0;
 
     if (room.doublesCount >= 3) {
-      pushLog(room, `${player.name} rolled triples doubles — Infirmary!`);
+      pushLog(room, `${player.name} rolled three doubles and acquired skin condition.`);
       sendToJail(room, player);
       return room;
     }
