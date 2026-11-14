@@ -98,6 +98,7 @@ export const DEFAULT_COMMUNITY: GameCard[] = [
   { id: 'cm15', text: 'You get placed in a six-Front Group A Final. Give 30 Carats to each other player.', effect: { type: 'pay_each', amount: 30 } },
   { id: 'cm16', text: 'Three cheers for trainer! Everyone gets 600 Carats.', effect: { type: 'money_all', amount: 600 } },
   { id: 'cm17', text: 'You and Kevin decide to do some sports betting. Select how many Carats you want to wager.', effect: { type: 'sports_bet' } },
+  { id: 'cm18', text: 'Bakushin and the Victory club splurged for the party, all on your expense. Lose 250 Carats.', effect: { type: 'money', amount: -250 } },
 ];
 
 export function defaultContent(): GameContent {
